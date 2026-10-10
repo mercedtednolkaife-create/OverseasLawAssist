@@ -1,0 +1,47 @@
+import React from 'react';
+
+interface GradeBadgeProps {
+  grade?: 'A' | 'B' | 'C' | 'D';
+  size?: 'sm' | 'md';
+}
+
+export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm' }) => {
+  const configs = {
+    A: {
+      label: 'A级 · 官方原文',
+      desc: '源自现行法源直接逐字引用，经V1-V3严格校验',
+      color: 'text-zinc-900 border-zinc-300 bg-zinc-100',
+    },
+    B: {
+      label: 'B级 · 核验转译',
+      desc: '官方来源之语义转述或标准术语译文，逻辑蕴含校验通过',
+      color: 'text-zinc-700 border-zinc-200 bg-zinc-50',
+    },
+    C: {
+      label: 'C级 · 待复核',
+      desc: '证据相关度偏低或属二手转引材料，建议重点复核',
+      color: 'text-amber-800 border-amber-200 bg-amber-50/70',
+    },
+    D: {
+      label: 'D级 · 仅供线索',
+      desc: '模型补充分析，缺乏直接法源锚定，仅供线索参考',
+      color: 'text-zinc-500 border-zinc-200 bg-zinc-50',
+    },
+  };
+
+  const cfg = configs[grade];
+
+  return (
+    <span
+      title={cfg.desc}
+      className={`inline-flex items-center gap-1 font-mono uppercase tracking-wider border rounded-md px-1.5 py-0.5 ${cfg.color} ${
+        size === 'sm' ? 'text-[11px]' : 'text-xs'
+      }`}
+    >
+      <span className="font-bold">{grade}</span>
+      <span className="font-sans normal-case tracking-normal text-zinc-500 text-[10px]">
+        {grade === 'A' ? '逐字引注' : grade === 'B' ? '核验转译' : grade === 'C' ? '待复核' : '仅线索'}
+      </span>
+    </span>
+  );
+};

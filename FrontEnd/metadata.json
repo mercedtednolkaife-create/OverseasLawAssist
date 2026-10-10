@@ -1,0 +1,6 @@
+{
+  "name": "德国联邦法域外法查明系统",
+  "description": "面向涉外司法与商事实务的德国联邦法查明与分析前置准备工作台，基于官方权威法源提供法条原文、权威判例、要件事实比对、证据链核验及合规审查。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
