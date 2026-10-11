@@ -1,0 +1,23 @@
+{
+  "run_id": "eval_20261010_184325",
+  "snapshot_id": "20261010-gii-v0.7",
+  "timestamp": "2026-10-10T18:43:40.190843",
+  "retrieval": {
+    "norm_recall_at_10": 1.0,
+    "case_recall_at_10": 0.5,
+    "mrr": 1.0,
+    "total_queries": 5
+  },
+  "e2e": {
+    "hallucination_count": 0,
+    "fact_trace_errors": 0,
+    "overreach_predictive_count": 0,
+    "overreach_rate": 0.0,
+    "element_coverage_rate": 1.0,
+    "total_statements": 10,
+    "status": "completed",
+    "veto_passed": true
+  },
+  "veto_check_passed": true,
+  "acceptance_verdict": "PASSED"
+}

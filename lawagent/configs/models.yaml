@@ -1,0 +1,57 @@
+# 大模型供应商与任务路由配置
+default_provider: dashscope
+
+providers:
+  dashscope:
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key_env: "OPENAI_API_KEY"
+
+tasks:
+  extract:
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-flash"
+    temperature: 0.0
+    timeout: 30
+
+  reformulate:
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-flash"
+    temperature: 0.2
+    timeout: 30
+
+  translate:
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-plus"
+    temperature: 0.0
+    timeout: 60
+
+  generate:
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-plus"
+    temperature: 0.1
+    timeout: 60
+
+  matcher:
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-plus"
+    temperature: 0.0
+    timeout: 45
+
+  judge: # 独立裁判模型，校验 V4 蕴含性，必须与主模型不同架构
+    provider: dashscope
+    model: "deepseek-v4-pro-0813"
+    fallback_model: "deepseek-v4-pro-0813"
+    temperature: 0.0
+    timeout: 45
+
+  chat: # 智能追问 Copilot 交互任务
+    provider: dashscope
+    model: "qwen3.8-flash"
+    fallback_model: "qwen-flash"
+    temperature: 0.3
+    timeout: 10

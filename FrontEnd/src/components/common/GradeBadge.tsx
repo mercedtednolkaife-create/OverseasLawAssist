@@ -29,7 +29,11 @@ export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm'
     },
   };
 
-  const cfg = configs[grade];
+  const safeGrade = (grade && typeof grade === 'string' && configs[grade.toUpperCase() as keyof typeof configs])
+    ? (grade.toUpperCase() as 'A' | 'B' | 'C' | 'D')
+    : 'A';
+
+  const cfg = configs[safeGrade];
 
   return (
     <span
@@ -38,9 +42,9 @@ export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm'
         size === 'sm' ? 'text-[11px]' : 'text-xs'
       }`}
     >
-      <span className="font-bold">{grade}</span>
+      <span className="font-bold">{safeGrade}</span>
       <span className="font-sans normal-case tracking-normal text-zinc-500 text-[10px]">
-        {grade === 'A' ? '逐字引注' : grade === 'B' ? '核验转译' : grade === 'C' ? '待复核' : '仅线索'}
+        {safeGrade === 'A' ? '逐字引注' : safeGrade === 'B' ? '核验转译' : safeGrade === 'C' ? '待复核' : '仅线索'}
       </span>
     </span>
   );

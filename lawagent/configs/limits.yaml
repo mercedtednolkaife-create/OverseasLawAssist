@@ -1,0 +1,21 @@
+# 限流与调用预算配置（对齐技术方案 7.4 与 7.5 节）
+rate_limits:
+  public:
+    requests_per_minute: 10
+    cases_per_day: 20
+  judicial:
+    requests_per_minute: 60
+    cases_per_day: 200
+  practitioner:
+    requests_per_minute: 60
+    cases_per_day: 200
+
+case_budgets:
+  max_questions: 6
+  max_elements: 12
+  max_evidence: 40
+  max_llm_calls: 80
+  max_tokens: 400000
+
+retention:
+  default_days: 90

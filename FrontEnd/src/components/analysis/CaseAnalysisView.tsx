@@ -18,6 +18,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { SimilarCaseItem, EntryCheckItem } from '../../types/lawAgent';
+import { CaseExecutiveSummaryCard } from './CaseExecutiveSummaryCard';
 
 export const CaseAnalysisView: React.FC = () => {
   const { currentCase, openLawModal, openLawDrawer, setCurrentView, isDrawerOpen } = useApp();
@@ -54,16 +55,58 @@ export const CaseAnalysisView: React.FC = () => {
   };
 
   const navItems = [
-    { id: 'module-b1', label: 'B1 争议焦点' },
-    { id: 'module-b2', label: 'B2 要件事实比对' },
-    { id: 'module-b3', label: 'B3 证据链溯源' },
-    { id: 'module-b4', label: 'B4 联邦法院判例' },
-    { id: 'module-b5', label: 'B5 入口检查' },
-    { id: 'module-b6', label: 'B6 专家提问清单' },
+    { id: 'module-summary', label: '全景研判总结' },
+    { id: 'module-b1', label: '争议焦点' },
+    { id: 'module-b2', label: '要件事实比对' },
+    { id: 'module-b3', label: '证据链溯源' },
+    { id: 'module-b4', label: '类案判例对照' },
+    { id: 'module-b5', label: '入口检查清单' },
+    { id: 'module-b6', label: '专家提问清单' },
   ];
+
+  const case_id = currentCase?.case_id || '';
+  const issues = useMemo(() => currentCase?.issues || [], [currentCase?.issues]);
+  const elements = useMemo(() => currentCase?.elements || [], [currentCase?.elements]);
+  const materials = useMemo(() => currentCase?.materials || [], [currentCase?.materials]);
+  const facts = useMemo(() => currentCase?.facts || [], [currentCase?.facts]);
+  const similar_cases = useMemo(() => currentCase?.similar_cases || [], [currentCase?.similar_cases]);
+  const entry_checks = useMemo(() => currentCase?.entry_checks || [], [currentCase?.entry_checks]);
+  const counsel_questions = useMemo(() => currentCase?.counsel_questions || [], [currentCase?.counsel_questions]);
+  const meta = currentCase?.meta;
+
+  const filteredIssues = useMemo(() => {
+    return issues.filter((i) => {
+      if (filterIssueKind === 'all') return true;
+      return i.kind === filterIssueKind;
+    });
+  }, [issues, filterIssueKind]);
+
+  const filteredElements = useMemo(() => {
+    return elements.filter((el) => {
+      if (filterElementStatus === 'all') return true;
+      return el.match_status === filterElementStatus;
+    });
+  }, [elements, filterElementStatus]);
+
+  const isAllElementsExpanded = useMemo(() => {
+    return (
+      filteredElements.length > 0 &&
+      filteredElements.every((el) => !!expandedElements[el.element_id])
+    );
+  }, [filteredElements, expandedElements]);
+
+  const lawIssuesCount = useMemo(
+    () => issues.filter((i) => i.kind === 'law').length,
+    [issues]
+  );
+  const factIssuesCount = useMemo(
+    () => issues.filter((i) => i.kind === 'fact').length,
+    [issues]
+  );
 
   // 采用 IntersectionObserver 监听视口可见性，性能极高且无频繁滚动重排抖动
   useEffect(() => {
+    if (!currentCase) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter((e) => e.isIntersecting);
@@ -86,7 +129,7 @@ export const CaseAnalysisView: React.FC = () => {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [currentCase]);
 
   const scrollToModule = (id: string) => {
     const el = document.getElementById(id);
@@ -96,38 +139,17 @@ export const CaseAnalysisView: React.FC = () => {
     }
   };
 
-  if (!currentCase) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 mb-4">
-          <Scale className="w-6 h-6" />
-        </div>
-        <h3 className="text-sm font-semibold text-zinc-900">未选择正在处理的案件</h3>
-        <p className="text-xs text-zinc-500 mt-1 max-w-sm">
-          请从左侧导航或顶部案卷切换器选择一个涉德案件以查看深度分析包。
-        </p>
-        <button
-          type="button"
-          onClick={() => setCurrentView('cases')}
-          className="mt-4 px-3.5 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-xs"
-        >
-          返回案件列表
-        </button>
-      </div>
-    );
-  }
-
-  const {
-    case_id,
-    issues = [],
-    elements = [],
-    materials = [],
-    facts = [],
-    similar_cases = [],
-    entry_checks = [],
-    counsel_questions = [],
-    meta,
-  } = currentCase;
+  const toggleAllElements = () => {
+    if (isAllElementsExpanded) {
+      setExpandedElements({});
+    } else {
+      const all: Record<string, boolean> = {};
+      filteredElements.forEach((el) => {
+        all[el.element_id] = true;
+      });
+      setExpandedElements(all);
+    }
+  };
 
   const caseTitle =
     (meta?.parties && meta.parties.length > 0 ? meta.parties.join(' vs ') : null) ||
@@ -197,47 +219,27 @@ export const CaseAnalysisView: React.FC = () => {
     }
   };
 
-  const filteredIssues = useMemo(() => {
-    return issues.filter((i) => {
-      if (filterIssueKind === 'all') return true;
-      return i.kind === filterIssueKind;
-    });
-  }, [issues, filterIssueKind]);
-
-  const filteredElements = useMemo(() => {
-    return elements.filter((el) => {
-      if (filterElementStatus === 'all') return true;
-      return el.match_status === filterElementStatus;
-    });
-  }, [elements, filterElementStatus]);
-
-  const isAllElementsExpanded = useMemo(() => {
+  if (!currentCase) {
     return (
-      filteredElements.length > 0 &&
-      filteredElements.every((el) => !!expandedElements[el.element_id])
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 mb-4">
+          <Scale className="w-6 h-6" />
+        </div>
+        <h3 className="text-sm font-semibold text-zinc-900">未选择正在处理的案件</h3>
+        <p className="text-xs text-zinc-500 mt-1 max-w-sm">
+          请从左侧导航或顶部案卷切换器选择一个涉德案件以查看深度分析包。
+        </p>
+        <button
+          type="button"
+          onClick={() => setCurrentView('cases')}
+          className="mt-4 px-3.5 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-xs"
+        >
+          返回案件列表
+        </button>
+      </div>
     );
-  }, [filteredElements, expandedElements]);
+  }
 
-  const toggleAllElements = () => {
-    if (isAllElementsExpanded) {
-      setExpandedElements({});
-    } else {
-      const all: Record<string, boolean> = {};
-      filteredElements.forEach((el) => {
-        all[el.element_id] = true;
-      });
-      setExpandedElements(all);
-    }
-  };
-
-  const lawIssuesCount = useMemo(
-    () => issues.filter((i) => i.kind === 'law').length,
-    [issues]
-  );
-  const factIssuesCount = useMemo(
-    () => issues.filter((i) => i.kind === 'fact').length,
-    [issues]
-  );
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-8 select-text relative">
@@ -379,10 +381,10 @@ export const CaseAnalysisView: React.FC = () => {
               </span>
               <h1 className="text-sm md:text-base font-semibold text-zinc-900 tracking-tight flex items-center gap-2">
                 <Scale className="w-4 h-4 text-blue-600" />
-                案情深度分析包 (前置咨询准备与要件事实比对)
+                案情深度分析 (咨询准备与要件事实比对)
               </h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                F30 比对已就绪
+                要件事实比对已就绪
               </span>
             </div>
             <p className="text-xs text-zinc-500 leading-relaxed max-w-4xl">
@@ -408,8 +410,13 @@ export const CaseAnalysisView: React.FC = () => {
       </div>
 
       {/* 
+        全景案件总结与法律研判卡片 (三重视角：司法端 / 实务端 / 公共端)
+      */}
+      <CaseExecutiveSummaryCard onScrollToModule={scrollToModule} />
+
+      {/* 
         ========================================================================
-        B1 争议焦点清单
+        争议焦点清单
         模块强化：低饱和蓝灰编号徽标、折叠展开控制、左右分栏、清晰内部分界
         ========================================================================
       */}
@@ -420,9 +427,8 @@ export const CaseAnalysisView: React.FC = () => {
         {/* 模块头部条 */}
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {/* 徽标替换为冷蓝/深海军蓝 */}
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              B1
+              01
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
@@ -639,7 +645,7 @@ export const CaseAnalysisView: React.FC = () => {
 
       {/* 
         ========================================================================
-        B2 德国法构成要件—案件事实比对与缺口矩阵 (F30 Matcher 四态规则)
+        构成要件—案件事实涵摄比对与缺口矩阵
         优化方案：折叠卡片 + 左侧状态指示线 (Satisfied 绿条, Partial 黄条, Disputed 蓝条)
         点击条文弹出小窗口显示，不用用户滑回顶部
         ========================================================================
@@ -652,12 +658,12 @@ export const CaseAnalysisView: React.FC = () => {
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              B2
+              02
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                 构成要件—案件事实比对与缺口矩阵
-                <span className="text-zinc-400 font-normal">| F30 Matcher 确定性四态引擎</span>
+                <span className="text-zinc-400 font-normal">| 确定性四态涵摄引擎</span>
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 严格遵循确定性规则：事实要素全部命中方可判定条件具备；无事实要素清单的要件最多判定为部分具备
@@ -930,7 +936,7 @@ export const CaseAnalysisView: React.FC = () => {
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              B3
+              03
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
@@ -1025,12 +1031,12 @@ export const CaseAnalysisView: React.FC = () => {
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              B4
+              04
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                 德意志联邦最高法院 (BGH) 类似判例对照
-                <span className="text-zinc-400 font-normal">| F31 裁判要旨比对</span>
+                <span className="text-zinc-400 font-normal">| 裁判要旨权威比对</span>
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 以本案事实与联邦法院 Tatbestand 做向量与语义比对，分析裁判要旨相同点与差异，不预断本案结果
@@ -1153,14 +1159,14 @@ export const CaseAnalysisView: React.FC = () => {
         >
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              B5
+              05
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
                 适用法律入口检查清单
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                S2 德国国际私法与实体法入口要件核验
+                国际私法与实体法入口要件核验
               </p>
             </div>
           </div>
@@ -1196,7 +1202,7 @@ export const CaseAnalysisView: React.FC = () => {
           </div>
         </div>
 
-        {/* B6 向专业人士提问清单 */}
+        {/* 向专业人士提问清单 */}
         <div
           id="module-b6"
           className="lg:col-span-7 bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden flex flex-col"
@@ -1204,15 +1210,15 @@ export const CaseAnalysisView: React.FC = () => {
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-                B6
+                06
               </span>
               <div>
                 <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
-                  向德国法执业律师与专家提问清单
+                  向域外法执业律师与专家提问清单
                 </h2>
                 <p className="text-[11px] text-zinc-500 mt-0.5">
-                  汇集要件缺口与过渡法模糊地带 (前置咨询准备包)
+                  汇集要件缺口与过渡法模糊地带 (咨询准备建议)
                 </p>
               </div>
             </div>

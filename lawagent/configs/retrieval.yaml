@@ -1,0 +1,28 @@
+# 检索与索引参数配置
+bm25:
+  k1: 1.5
+  b: 0.75
+  top_k: 50
+
+dense:
+  model_name: "BAAI/bge-m3"
+  top_k: 50
+  faiss_index_type: "IndexFlatIP"
+  device: "cuda" # 可回退为 cpu
+
+fusion:
+  method: "rrf"
+  rrf_k: 60
+  top_k: 30
+
+graph_expansion:
+  enabled: true
+  max_hops: 2
+  fanout_per_rel: 20
+  allowed_rels: ["CITES", "APPLIES", "DEFINES"]
+
+rerank:
+  enabled: true
+  model_name: "BAAI/bge-reranker-v2-m3"
+  top_k: 8
+  threshold_tau: 0.5

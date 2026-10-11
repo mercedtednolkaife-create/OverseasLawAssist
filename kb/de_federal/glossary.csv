@@ -1,0 +1,39 @@
+de,zh,en,relation,zh_forbidden,note,source
+Sachmangel,物之瑕疵,defect of goods / physical defect,equivalent,,德国民法典第434条；2022年起区分主观要件与客观要件,BGB § 434
+Rechtsmangel,权利瑕疵,defect of title,equivalent,,标的物存在第三人权利负担，BGB § 435,BGB § 435
+Nacherfüllung,事后履行,cure / supplementary performance,equivalent,,买受人救济的首要顺位（事后履行优先原则），BGB § 439,BGB § 439
+Nachbesserung,消除瑕疵 / 修理,remedy of defect / repair,equivalent,,事后履行形式之一，BGB § 439第1款第1项,BGB § 439 (1)
+Nachlieferung,交付无瑕疵之物 / 换货,delivery of defect-free goods,equivalent,,事后履行形式之二，BGB § 439第1款第2项,BGB § 439 (1)
+Rücktritt,解除,rescission / withdrawal,equivalent,撤销,双务合同法定或约定解除；严禁混淆为法律行为撤销(Anfechtung)，BGB § 323,BGB § 323
+Minderung,减价,price reduction,equivalent,,因瑕疵降低买卖价金，BGB § 441,BGB § 441
+Schadensersatz,损害赔偿,damages,equivalent,,违约损害赔偿请求权基础，BGB §§ 280 ff.,BGB § 280
+Schadensersatz statt der Leistung,替代给付的损害赔偿,damages in lieu of performance,equivalent,,需满足催告定期等附加要件，BGB § 281,BGB § 281
+Aufwendungsersatz,费用赔偿,reimbursement of expenses,equivalent,,信赖利益损失补偿，BGB § 284,BGB § 284
+Fristsetzung,指定期限 / 催告期限,setting a deadline / grace period,equivalent,,解除合同与损害赔偿的前置要件，BGB § 323第1款,BGB § 323 (1)
+Gefahrübergang,危险转移 / 风险转移,passing of risk,equivalent,,交付时标的物毁损灭失风险转移，BGB § 446,BGB § 446
+Verjährung,时效,limitation period / prescription,equivalent,诉讼时效,实体法上的请求权时效抗辩；买卖瑕疵通常为2年，BGB § 438,BGB § 438
+Rügepflicht,检验与通知义务,duty to inspect and give notice of defects,equivalent,,商事买卖买方核心义务，违反应视为承认货物，HGB § 377,HGB § 377
+unverzüglich,即刻 / 毫不迟延,without undue delay,equivalent,,非因过错的不迟延，BGB § 121第1款,BGB § 121 (1)
+Handelsgeschäft,商行为,commercial transaction,equivalent,,商法典适用前提；双方商行为触发严格通知义务，HGB § 343,HGB § 343
+Kaufmann,商人,merchant,equivalent,,依法从事营业并办理登记者，HGB §§ 1 ff.,HGB § 1
+Anfechtung,撤销,avoidance / challenge,equivalent,解除,因错误或欺诈/胁迫撤销意思表示；严禁混淆为合同解除(Rücktritt),BGB § 119
+Anspruch,请求权,claim,equivalent,诉权,实体法请求权；不同于程序法上的起诉权利(诉权),BGB § 194
+Treu und Glauben,诚实信用,good faith,equivalent,,一般条款，BGB § 242,BGB § 242
+culpa in contrahendo (c.i.c.),缔约过失,fault in conclusion of contract,equivalent,,缔约阶段注意义务违反，BGB § 311第2款,BGB § 311 (2)
+Allgemeine Geschäftsbedingungen,格式条款 / 标准合同条款,standard terms and conditions,equivalent,,格式条款效力控制，BGB §§ 305-310,BGB § 305
+Anscheinsvollmacht,外观代理权,apparent authority,approximate,,功能与中国法表见代理近似但构成要件与责任基础不同（强调过失容忍），须加注说明,BGH Rechtsprechung
+Duldungsvollmacht,容忍代理权,tolerated authority,approximate,,本人明知他人以其名义行为而默示容许，近似表见代理一种情形,BGH Rechtsprechung
+Verzug,迟延,default / delay in performance,equivalent,,履行迟延要件，需债务到期、催告与归责，BGB § 286,BGB § 286
+Mahnung,催告,reminder / warning notice,equivalent,,迟延的一般前提，BGB § 286第1款,BGB § 286 (1)
+Vertretenmüssen,应负责任 / 归责事由,responsibility / fault requirement,equivalent,,故意与过失责任原则，BGB § 276,BGB § 276
+Unmöglichkeit,给付不能,impossibility,equivalent,,原给付义务免除与救济转化，BGB § 275,BGB § 275
+Kündigung,终止,termination,equivalent,,继续性合同的向后终止，区别于解除(Rücktritt),BGB § 314
+Sittenwidrigkeit,违反善良风俗,contra bonos mores / contrary to public policy,equivalent,,法律行为无效情形，BGB § 138,BGB § 138
+Schuldverhältnis,债之关系 / 债权债务关系,obligation / contractual relationship,equivalent,,BGB 第2编,BGB § 241
+Abtretung,债权让与,assignment of claim,equivalent,,BGB §§ 398 ff.,BGB § 398
+Aufrechnung,抵销,set-off,equivalent,,BGB §§ 387 ff.,BGB § 387
+Vertragsstrafe,违约金,contractual penalty,equivalent,,惩罚性违约金，法院具酌减权，BGB §§ 339-343,BGB § 339
+Eigentumsvorbehalt,所有权保留,retention of title,equivalent,,BGB § 449,BGB § 449
+Leistungsort,履行地,place of performance,equivalent,,BGB § 269,BGB § 269
+Ermessen,裁量,discretion,equivalent,,法官或当事人的合法自由裁量,BGB § 315
+Beweislast,举证责任,burden of proof,equivalent,,诉讼法与实体法举证分配,ZPO § 286

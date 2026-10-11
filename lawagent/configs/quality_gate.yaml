@@ -1,0 +1,11 @@
+# 数据更新质量闸门阈值（对齐技术方案 4.8 节）
+gates:
+  catalog_delta_max_ratio: 0.05
+  empty_text_max_ratio: 0.005
+  structural_contract_sample_keys:
+    - "BGB:§433"
+    - "HGB:§377"
+  text_hash_change_max_ratio: 0.10
+  parse_error_max_ratio: 0.005
+  regression_hallucinated_citations_max: 0
+  recall_at_10_drop_max: 0.05

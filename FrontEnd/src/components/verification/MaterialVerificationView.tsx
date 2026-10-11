@@ -54,7 +54,7 @@ export const MaterialVerificationView: React.FC = () => {
       <div className="border-b border-zinc-200 pb-4">
         <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-blue-600" />
-          当事人提交外国法材料真实性与现行性核验 (F16)
+          当事人提交外国法材料真实性与现行性核验
         </h1>
         <p className="text-xs text-zinc-500 mt-0.5">
           对当事人主张或提交的德意志联邦法法条、案号及引文进行真实性比对、现行效力核验及判例全文要件审查（对齐解释（二）第三条）

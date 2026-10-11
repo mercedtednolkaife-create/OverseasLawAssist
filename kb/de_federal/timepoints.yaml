@@ -1,0 +1,32 @@
+- norms:
+    - "BGB:§434"
+    - "BGB:§437"
+    - "BGB:§438"
+    - "BGB:§439"
+  changes:
+    - effective: "2022-01-01"
+      basis: contract
+      note: 德国买卖法重大修订（含数字要素商品销售法，BGBl. I 2021 S. 2154）；物之瑕疵定义由传统主客观瑕疵重构为主观要求、客观要求与安装要求。
+      transitional: EGBGB 第 229 条第 58 节
+    - effective: "2002-01-01"
+      basis: contract
+      note: 德国债法现代化法（Schuldrechtsmodernisierungsgesetz）；全面重构给付障碍法与买卖救济体系。
+      transitional: EGBGB 第 229 条第 5 节
+
+- norms:
+    - "BGB:§305"
+    - "BGB:§308"
+    - "BGB:§309"
+  changes:
+    - effective: "2022-03-01"
+      basis: contract
+      note: 公平消费者合同法实施；强化对继续性债之关系自动续约格式条款的司法审查。
+      transitional: EGBGB 第 229 条第 60 节
+
+- norms:
+    - "BGB:§288"
+  changes:
+    - effective: "2014-07-29"
+      basis: event
+      note: 迟延支付指令转化法；商事交易迟延法定利息基准由基准利率+8%调整为基准利率+9%，并增设40欧元法定追索赔偿包干费。
+      transitional: EGBGB 第 229 条第 34 节

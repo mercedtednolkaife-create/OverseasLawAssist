@@ -44,7 +44,7 @@ export const NormSearchEngineView: React.FC = () => {
         <div>
           <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
             <Search className="w-4 h-4 text-blue-600" />
-            德意志联邦法律法规与判例检索库 (F04)
+            域外法律法规与判例检索库
           </h1>
           <p className="text-xs text-zinc-500 mt-0.5">
             权威法源直连 gesetze-im-internet.de 联邦法规与 rechtsprechung-im-internet.de 最高院判例，支持德汉跨语言检索

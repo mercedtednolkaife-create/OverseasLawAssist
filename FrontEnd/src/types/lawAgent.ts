@@ -208,6 +208,7 @@ export interface CaseState {
   counsel_questions: string[];
   findings: Finding[];
   checks: CheckItem[];
+  saved_insights?: SavedInsight[];
   dashboard: DashboardMetrics;
   unparsed_refs: { raw: string; span?: [number, number] }[];
   status: CaseWorkflowStatus;
@@ -312,3 +313,58 @@ export interface SearchTraceItem {
   selected_ref_ids: string[];
   discarded_notes: string;
 }
+
+export interface AgentWorkflowStep {
+  step_id: string;
+  name: string;
+  role_desc: string;
+  model: string;
+  status: 'completed' | 'verified' | 'delivered' | 'running' | 'idle';
+  duration_ms: number;
+  inputs_summary: string;
+  outputs_summary: string;
+  details: Record<string, any>;
+  quality_checks: Array<{ rule: string; status: string }>;
+}
+
+export interface AgentWorkflowResponse {
+  case_id: string;
+  total_steps: number;
+  active_model_primary: string;
+  active_model_judge: string;
+  steps: AgentWorkflowStep[];
+}
+
+export interface SavedInsight {
+  insight_id: string;
+  case_id: string;
+  category: 'memo' | 'counsel_question' | 'trial_outline' | 'red_team_defense';
+  title: string;
+  content: string;
+  source_model?: string;
+  referenced_statutes?: string[];
+  created_at: string;
+}
+
+export interface SaveInsightPayload {
+  category: 'memo' | 'counsel_question' | 'trial_outline' | 'red_team_defense';
+  title: string;
+  content: string;
+  source_model?: string;
+  referenced_statutes?: string[];
+}
+
+export interface CaseChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface CaseChatResponse {
+  case_id: string;
+  reply: string;
+  model: string;
+  mode?: 'neutral' | 'red_teaming';
+  referenced_statutes: string[];
+  referenced_issues: string[];
+}
+

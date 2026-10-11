@@ -17,6 +17,7 @@ import { VerificationDashboardView } from './components/dashboard/VerificationDa
 import { NormSearchEngineView } from './components/search/NormSearchEngineView';
 import { MaterialVerificationView } from './components/verification/MaterialVerificationView';
 import { ExpertConsultsView } from './components/consults/ExpertConsultsView';
+import { AgentWorkspaceView } from './components/workspace/AgentWorkspaceView';
 import { Scale, CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
@@ -29,6 +30,8 @@ const MainLayout: React.FC = () => {
         return <CaseListView />;
       case 'entry':
         return <CaseEntryForm />;
+      case 'workspace':
+        return <AgentWorkspaceView />;
       case 'review':
         return <ReportReviewView />;
       case 'analysis':
@@ -70,7 +73,7 @@ const MainLayout: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Scale className="w-3.5 h-3.5 text-zinc-500" />
                   <span className="font-medium text-zinc-700">
-                    德国联邦法域外法查明系统
+                    涉外法查明Agent
                   </span>
                   <span>·</span>
                   <span className="font-mono text-[11px]">gesetze-im-internet.de / rechtsprechung-im-internet.de</span>

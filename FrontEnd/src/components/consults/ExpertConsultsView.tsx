@@ -59,7 +59,7 @@ export const ExpertConsultsView: React.FC = () => {
       <div className="border-b border-zinc-200 pb-4">
         <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
           <Users className="w-4 h-4 text-zinc-700" />
-          德国法专家库与会商流转管理 (F17 / 解释二第四条)
+          域外法专家库与会商流转管理 (最高院解释二第四条)
         </h1>
         <p className="text-xs text-zinc-500 mt-0.5">
           符合涉外民事关系法律适用法司法解释关于外国法专家资质审查、利益冲突排除及书面咨询意见固定流程
@@ -72,7 +72,7 @@ export const ExpertConsultsView: React.FC = () => {
           {/* 发起专家咨询表单 */}
           <div className="bg-white rounded-xl border border-zinc-200 p-5 space-y-4 shadow-xs">
             <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
-              发起德国法专家会商委托单
+              发起域外法专家会商委托单
             </h3>
 
             <form onSubmit={handleCreateConsult} className="space-y-3.5 text-xs">

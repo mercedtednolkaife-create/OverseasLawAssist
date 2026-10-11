@@ -49,7 +49,7 @@ export const VerificationDashboardView: React.FC = () => {
         <div>
           <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
             <Activity className="w-4 h-4 text-blue-600" />
-            F25 查明质量与可核验计数仪表盘
+            查明质量与可核验计数仪表盘
           </h1>
           <p className="text-xs text-zinc-500 mt-0.5">
             查明质量核验计数、法源出处与证据溯源闭环
@@ -173,7 +173,7 @@ export const VerificationDashboardView: React.FC = () => {
             {/* 要件-事实四态对照 */}
             <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200/80 space-y-2 text-xs">
               <span className="font-semibold text-zinc-800 block">
-                要件—事实对照状态 (F30 Matcher)
+                要件—事实对照状态 (四态涵摄引擎)
               </span>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between items-center">
@@ -245,7 +245,7 @@ export const VerificationDashboardView: React.FC = () => {
               时点、CISG与比较法合规门禁
             </h3>
             <p className="text-zinc-500 text-[11px] mt-0.5">
-              依据第4.7节与第6.2节守护规则自动拦截
+              依据涉外法律客观中立规则与防线机制自动拦截
             </p>
           </div>
 

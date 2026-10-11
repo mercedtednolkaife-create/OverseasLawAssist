@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp, ActiveView } from '../../context/AppContext';
 import {
-  AlertTriangle,
   FolderOpen,
   Download,
   BookOpen,
@@ -43,10 +42,11 @@ export const TopBar: React.FC = () => {
   const viewTitles: Record<ActiveView, string> = {
     cases: '案件台账列表',
     entry: 'S0 案情要素与法源参数录入',
+    workspace: 'Agent 工作台 (Multi-Agent 协同流与法律追问)',
     review: '双语查明报告与审阅留痕 (解释二规范)',
-    analysis: '案情深度分析包 (争点·要件·证据链·类案)',
+    analysis: '案情深度分析 (争点·要件·证据链·类案)',
     dashboard: '可核验计数校验仪表盘',
-    search: '德国联邦法律法规与判例检索库',
+    search: '域外法律法规与判例检索库',
     verification: '当事人外国法材料核验',
     consults: '专家会商流转与资质管理',
   };
@@ -149,17 +149,11 @@ export const TopBar: React.FC = () => {
 
       {/* 右侧：状态指示与快捷操作 */}
       <div className="flex items-center gap-2.5 shrink-0 text-xs">
-        {/* 时点两态指示条 */}
-        {currentCase?.timepoint?.level === 'yellow' && (
-          <span className="hidden md:flex items-center gap-1.5 text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-mono text-[11px]">
-            <AlertTriangle className="w-3 h-3 text-amber-600" />
-            <span>时点黄色提示 · 2022过渡法</span>
-          </span>
-        )}
-        {currentCase?.timepoint?.level === 'red' && (
-          <span className="hidden md:flex items-center gap-1.5 text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md font-mono text-[11px]">
-            <AlertTriangle className="w-3 h-3 text-rose-600" />
-            <span>时点阻断 · 须专家核验</span>
+        {/* 工作流运行中动态指示 */}
+        {currentCase?.status === 'running' && (
+          <span className="flex items-center gap-1.5 text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md font-mono text-[11px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+            <span>工作流执行中 · {currentCase.current_node || '推理推进'}</span>
           </span>
         )}
 

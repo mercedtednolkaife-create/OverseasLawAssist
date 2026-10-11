@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserRole, CaseState, CaseSummary, Evidence } from '../types/lawAgent';
 import { lawAgentApi } from '../api/lawAgentApi';
-import { DEMO_CASE_C01, MOCK_CASE_SUMMARIES } from '../api/mockData';
 
 export type ActiveView =
   | 'cases'
   | 'entry'
+  | 'workspace'
   | 'analysis'
   | 'review'
   | 'dashboard'
@@ -51,14 +51,14 @@ interface AppContextType {
   closeLawModal: () => void;
 }
 
-const AppContext = createContext<AppContextType | null>(null);
+export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRoleState] = useState<UserRole>('practitioner'); // 默认实务专业端
   const [currentView, setCurrentView] = useState<ActiveView>('analysis'); // 默认展示深度分析与法源对照
-  const [currentCaseId, setCurrentCaseId] = useState<string | null>(DEMO_CASE_C01.case_id);
-  const [currentCase, setCurrentCase] = useState<CaseState | null>(DEMO_CASE_C01);
-  const [casesList, setCasesList] = useState<CaseSummary[]>(MOCK_CASE_SUMMARIES);
+  const [currentCaseId, setCurrentCaseId] = useState<string | null>('C001');
+  const [currentCase, setCurrentCase] = useState<CaseState | null>(null);
+  const [casesList, setCasesList] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -162,6 +162,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loadCase(currentCaseId);
     }
   }, [currentCaseId, loadCase]);
+
+  // 当案件处于 running 状态时，自动挂接 SSE 实时更新状态
+  useEffect(() => {
+    if (!currentCaseId || currentCase?.status !== 'running') return;
+    const unsub = lawAgentApi.subscribeEvents(currentCaseId, (event, data) => {
+      if (event === 'state_update') {
+        setCurrentCase(data);
+      } else if (event === 'done') {
+        refreshCurrentCase();
+      }
+    });
+    return () => unsub();
+  }, [currentCaseId, currentCase?.status, refreshCurrentCase]);
+
 
   return (
     <AppContext.Provider

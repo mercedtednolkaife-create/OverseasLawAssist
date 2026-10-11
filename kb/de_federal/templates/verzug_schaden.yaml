@@ -1,0 +1,70 @@
+issue_id: verzug_schaden
+name_zh: 债务人给付迟延与迟延损害赔偿
+triggers:
+  - 迟延
+  - 逾期
+  - 交货延迟
+  - 逾期付款
+  - 催告
+  - 迟延利息
+  - 违约损害
+elements:
+  - id: e1
+    name_zh: 给付义务已届清偿期且给付仍为可能
+    core_norms:
+      - "BGB:§271"
+      - "BGB:§286"
+    need_cases: 0
+    need_materials: true
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 合同约定的履行期限或到期日
+      - id: s2
+        name_zh: 债务人届期未履行给付义务之事实
+    glossary:
+      - Verzug
+
+  - id: e2
+    name_zh: 债权人催告或存在法定免除催告之情形
+    core_norms:
+      - "BGB:§286"
+    need_cases: 1
+    need_materials: true
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 债权人向债务人发出清偿催告通知之时间与记录
+    glossary:
+      - Mahnung
+
+  - id: e3
+    name_zh: 债务人具归责事由（过错推定义务）
+    core_norms:
+      - "BGB:§276"
+      - "BGB:§286"
+    need_cases: 0
+    need_materials: false
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 导致迟延履行的客观原因或不可抗力抗辩情况
+    glossary:
+      - Vertretenmüssen
+
+  - id: e4
+    name_zh: 迟延损害之产生与迟延利息标准
+    core_norms:
+      - "BGB:§280"
+      - "BGB:§288"
+    need_cases: 0
+    need_materials: true
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 因迟延直接发生的额外费用、仓储费或利息损失凭证
+    glossary:
+      - Schadensersatz
+
+flags:
+  - TIME_POINT

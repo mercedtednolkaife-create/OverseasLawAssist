@@ -1,0 +1,48 @@
+roles:
+  public:
+    name: "公共端"
+    features:
+      - search_norms
+      - search_qa
+      - lite_consulting
+      - feedback_public
+    export_formats:
+      - json
+    restrictions:
+      - no_individual_analysis
+      - no_material_verification
+      - no_expert_consult
+
+  judicial:
+    name: "司法辅助端"
+    features:
+      - run_workflow
+      - decompose_issues
+      - review_report
+      - case_analysis
+      - verify_materials
+      - expert_consult
+      - export_report
+    export_formats:
+      - docx
+      - json
+      - md
+    restrictions:
+      - advisory_only_disclaimer
+
+  practitioner:
+    name: "实务端"
+    features:
+      - run_workflow
+      - decompose_issues
+      - review_report
+      - case_analysis
+      - verify_materials
+      - expert_consult
+      - export_report
+      - multi_case_management
+    export_formats:
+      - docx
+      - json
+      - md
+    restrictions: []

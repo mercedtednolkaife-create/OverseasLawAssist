@@ -1,0 +1,97 @@
+issue_id: kauf_mangel
+name_zh: 买卖合同物之瑕疵与买方救济
+triggers:
+  - 瑕疵
+  - 货物不符
+  - 质量
+  - 解除
+  - 修理
+  - 换货
+  - 减价
+  - 催告
+elements:
+  - id: e1
+    name_zh: 是否构成物之瑕疵
+    core_norms:
+      - "BGB:§434"
+    need_cases: 0
+    need_materials: true
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 合同约定的品质、技术规格或预定用途
+      - id: s2
+        name_zh: 交付时货物的实际状况或客观缺陷表现
+    glossary:
+      - Sachmangel
+
+  - id: e2
+    name_zh: 买方救济权体系（事后履行优先原则）
+    core_norms:
+      - "BGB:§437"
+      - "BGB:§439"
+    need_cases: 0
+    need_materials: false
+    match_facts: false
+    glossary:
+      - Nacherfüllung
+      - Nachbesserung
+      - Nachlieferung
+
+  - id: e3
+    name_zh: 解除与损害赔偿的前提（催告与合理期限届满）
+    core_norms:
+      - "BGB:§323"
+      - "BGB:§281"
+    need_cases: 1
+    need_materials: true
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 买方向卖方发出催告通知
+      - id: s2
+        name_zh: 催告中所设定的事后履行合理期限
+      - id: s3
+        name_zh: 期限届满卖方仍未完成有效补正履行
+    glossary:
+      - Rücktritt
+      - Fristsetzung
+      - Schadensersatz statt der Leistung
+
+  - id: e4
+    name_zh: 商事买卖的检验与即刻通知义务
+    core_norms:
+      - "HGB:§377"
+    need_cases: 1
+    need_materials: true
+    match_facts: true
+    condition: both_merchants
+    fact_slots:
+      - id: s1
+        name_zh: 标的物交付与到达买方控制下的时间
+      - id: s2
+        name_zh: 买方依照通常业务进程进行检验的情况
+      - id: s3
+        name_zh: 发出瑕疵通知的时间与具体通知内容
+    glossary:
+      - Rügepflicht
+      - unverzüglich
+      - Handelsgeschäft
+
+  - id: e5
+    name_zh: 瑕疵救济请求权时效
+    core_norms:
+      - "BGB:§438"
+    need_cases: 0
+    need_materials: false
+    match_facts: true
+    fact_slots:
+      - id: s1
+        name_zh: 标的物交付与风险转移时间
+    glossary:
+      - Verjährung
+      - Gefahrübergang
+
+flags:
+  - TIME_POINT
+  - CISG_CHECK

@@ -26,7 +26,7 @@ const DEFAULT_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 const DEFAULT_TOKEN = 'token_practitioner_demo_secret_2026';
 
 export function isBackendConfigured(): boolean {
-  return Boolean((import.meta as any).env?.VITE_API_BASE_URL);
+  return true;
 }
 
 let currentAuthToken = DEFAULT_TOKEN;
@@ -121,3 +121,23 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     throw new ApiError(0, err.message || '网络连接异常，无法访问德国法查明服务');
   }
 }
+
+export async function downloadBlob(endpoint: string): Promise<Blob> {
+  const url = `${DEFAULT_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${currentAuthToken}`,
+      },
+    });
+    if (!response.ok) {
+      throw new ApiError(response.status, `文件下载失败 (${response.status})`);
+    }
+    return await response.blob();
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(0, err.message || '下载请求异常');
+  }
+}
+

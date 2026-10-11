@@ -235,7 +235,7 @@ export const CaseEntryForm: React.FC = () => {
                   className="w-full px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white focus:outline-none focus:border-zinc-400"
                 />
                 <span className="text-[10px] text-zinc-400 mt-0.5 block">
-                  MVP 专注于德意志联邦法域
+                  当前首发支持德意志联邦法域，支持扩展其他法域
                 </span>
               </div>
             </div>

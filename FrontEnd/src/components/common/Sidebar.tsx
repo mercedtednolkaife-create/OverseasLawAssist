@@ -19,6 +19,7 @@ import {
   Globe,
   Check,
   BookOpen,
+  Bot,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -76,7 +77,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
     {
       title: '查明工作台',
       items: [
-        { id: 'analysis', label: '案情深度分析包', icon: <Scale className="w-4 h-4" /> },
+        { id: 'workspace', label: 'Agent 工作台', icon: <Bot className="w-4 h-4" /> },
+        { id: 'analysis', label: '案情深度分析', icon: <Scale className="w-4 h-4" /> },
         { id: 'review', label: '双语报告与核验', icon: <FileSearch className="w-4 h-4" /> },
         { id: 'dashboard', label: '可核验计数仪表盘', icon: <Activity className="w-4 h-4" /> },
       ],
@@ -84,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
     {
       title: '检索与工具',
       items: [
-        { id: 'search', label: '德国联邦法检索库', icon: <Search className="w-4 h-4" /> },
+        { id: 'search', label: '域外法律检索库', icon: <Search className="w-4 h-4" /> },
         {
           id: 'verification',
           label: '当事人材料核验',
@@ -125,10 +127,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
             {!collapsed && (
               <div className="min-w-0">
                 <span className="text-xs font-semibold text-zinc-900 tracking-tight block truncate">
-                  德国联邦法查明
+                  涉外法查明Agent
                 </span>
                 <span className="text-[10px] text-zinc-400 font-mono block -mt-0.5">
-                  v0.7 · 司法准备工作台
+                  v0.7 · 域外法查明辅助 Agent
                 </span>
               </div>
             )}

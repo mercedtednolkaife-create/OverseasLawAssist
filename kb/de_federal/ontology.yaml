@@ -1,0 +1,25 @@
+# 德国联邦法本体 v0 规范 (对齐技术方案 4.6 节)
+nodes:
+  Norm:
+    desc: 联邦法条实体
+    id_format: "NORM:{law}:{enbez}"
+  Case:
+    desc: 联邦最高法院判例实体
+    id_format: "CASE:{court}:{az}:{decided}"
+  Concept:
+    desc: 德国法核心法律概念实体
+    id_format: "CPT:{concept_de}"
+
+relations:
+  CITES:
+    desc: 法条直接引用其他法条，或判例裁判理由中对法条/既往判例的字面引述
+    src_types: ["Norm", "Case"]
+    dst_types: ["Norm", "Case"]
+  APPLIES:
+    desc: 判例适用、涵摄或释明该法条
+    src_types: ["Case"]
+    dst_types: ["Norm"]
+  DEFINES:
+    desc: 概念在成文法典中的法定要件定义法条
+    src_types: ["Concept"]
+    dst_types: ["Norm"]

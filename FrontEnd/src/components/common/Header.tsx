@@ -57,10 +57,10 @@ export const Header: React.FC = () => {
             </div>
             <div>
               <span className="text-base font-bold text-neutral-900 tracking-tight block whitespace-nowrap">
-                德国联邦法域外法查明系统
+                涉外法查明Agent
               </span>
               <span className="text-xs text-neutral-500 block -mt-0.5">
-                Bundesrecht Foreign Law Ascertainment Agent
+                Foreign Law Ascertainment Agent
               </span>
             </div>
           </button>
@@ -140,20 +140,8 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4 text-neutral-500">
-          {currentCase?.timepoint?.level === 'yellow' && (
-            <span className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
-              <AlertTriangle className="w-3 h-3 text-amber-600" />
-              时点状态：黄色警示（存在2022年买卖法修订过渡期）
-            </span>
-          )}
-          {currentCase?.timepoint?.level === 'red' && (
-            <span className="flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-medium">
-              <AlertTriangle className="w-3 h-3 text-rose-600" />
-              时点状态：红色阻断（订立时点早于重大修订生效日）
-            </span>
-          )}
           <span className="hidden sm:inline text-neutral-400">
-            合规守卫：不输出胜诉概率预测 · 逐条绑定官方出处
+            客观中立：不输出片面胜诉概率预测 · 逐条绑定官方权威出处
           </span>
         </div>
       </div>

@@ -43,6 +43,19 @@ export const ReportReviewView: React.FC = () => {
   const [traces, setTraces] = useState<SearchTraceItem[]>([]);
   const [exporting, setExporting] = useState(false);
 
+  const allStatements = useMemo(
+    () => (currentCase?.findings || []).flatMap((f) => f.statements || []),
+    [currentCase?.findings]
+  );
+  const evidenceList = useMemo(
+    () => Object.values(currentCase?.evidence || {}),
+    [currentCase?.evidence]
+  );
+  const selectedEvidence: Evidence | undefined = useMemo(
+    () => (selectedEid ? currentCase?.evidence?.[selectedEid] : evidenceList[0]),
+    [selectedEid, currentCase?.evidence, evidenceList]
+  );
+
   if (!currentCase) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-20 text-center space-y-3">
@@ -104,48 +117,50 @@ export const ReportReviewView: React.FC = () => {
     }
   };
 
-  const handleExport = (format: 'docx' | 'md' | 'json') => {
+  const handleExport = async (format: 'docx' | 'md' | 'json') => {
     setExporting(true);
-    setTimeout(() => {
-      setExporting(false);
+    try {
       const reportVer = currentCase.dashboard?.report_version || 1;
       const contentHash = currentCase.dashboard?.content_hash || '';
       const filename = `German_Law_Report_${currentCase.case_id}_v${reportVer}.${format}`;
-      const content =
-        format === 'json'
-          ? JSON.stringify(currentCase, null, 2)
-          : `# 德意志联邦法域外法查明材料包 (解释二规范报告)\n\n案件编号: ${currentCase.case_id}\n快照版本: ${currentCase.snapshot_id}\n生成时间: ${currentCase.updated_at}\n\n## 一、法源具体规定与德汉对照\n${Object.values(currentCase.evidence || {})
-              .map((e) => `### ${e.ref_id}\n原文: ${e.text_de}\n译文: ${currentCase.translations?.[e.eid] || ''}\n来源: ${e.source_url}\n`)
-              .join('\n')}\n\n## 二、核心查明陈述\n${(currentCase.findings || [])
-              .flatMap((f) => f.statements || [])
-              .map((s) => `- [${s.grade}级] ${s.text_zh} (出处: ${(s.evidence_ids || []).join(',')})`)
-              .join('\n')}\n\n---\nAI辅助生成 · 须经人工与专家复核 · 不预测裁判结果 · 内容哈希: ${contentHash}`;
 
-      const blob = new Blob([content], {
-        type: format === 'json' ? 'application/json' : 'text/markdown',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast(`已生成并下载 ${filename}`, 'success');
-    }, 600);
+      if (format === 'docx') {
+        const blob = await lawAgentApi.exportDocx(currentCase.case_id);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`已生成并下载最高院标准 Word 报告 ${filename}`, 'success');
+      } else {
+        const content =
+          format === 'json'
+            ? JSON.stringify(currentCase, null, 2)
+            : `# 德意志联邦法域外法查明材料包 (解释二规范报告)\n\n案件编号: ${currentCase.case_id}\n快照版本: ${currentCase.snapshot_id}\n生成时间: ${currentCase.updated_at}\n\n## 一、法源具体规定与德汉对照\n${Object.values(currentCase.evidence || {})
+                .map((e) => `### ${e.ref_id}\n原文: ${e.text_de}\n译文: ${currentCase.translations?.[e.eid] || ''}\n来源: ${e.source_url}\n`)
+                .join('\n')}\n\n## 二、核心查明陈述\n${(currentCase.findings || [])
+                .flatMap((f) => f.statements || [])
+                .map((s) => `- [${s.grade}级] ${s.text_zh} (出处: ${(s.evidence_ids || []).join(',')})`)
+                .join('\n')}\n\n---\nAI辅助生成 · 须经人工与专家复核 · 不预测裁判结果 · 内容哈希: ${contentHash}`;
+
+        const blob = new Blob([content], {
+          type: format === 'json' ? 'application/json' : 'text/markdown',
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`已生成并下载 ${filename}`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || '报告生成导出失败', 'error');
+    } finally {
+      setExporting(false);
+    }
   };
-
-  const allStatements = useMemo(
-    () => (currentCase.findings || []).flatMap((f) => f.statements || []),
-    [currentCase.findings]
-  );
-  const evidenceList = useMemo(
-    () => Object.values(currentCase.evidence || {}),
-    [currentCase.evidence]
-  );
-  const selectedEvidence: Evidence | undefined = useMemo(
-    () => (selectedEid ? currentCase.evidence?.[selectedEid] : evidenceList[0]),
-    [selectedEid, currentCase.evidence, evidenceList]
-  );
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">

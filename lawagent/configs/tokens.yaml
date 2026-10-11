@@ -1,0 +1,16 @@
+# 访问凭证安全配置（仅存储 SHA256 哈希值，对齐技术方案 7.4 节）
+tokens:
+  6aa8e2a268440bd03b10cfb25eb3b77c3b6b35fd6fdafa3d74e91b9d39967898:
+    role: practitioner
+    owner: demo_lawyer_principal
+    name: "示范实务律师端"
+
+  24498b3ea31ac576cf11f401d93393bd700b836b81e5b238f3c454c8fa234e3d:
+    role: judicial
+    owner: demo_court_principal
+    name: "示范涉外审判司法端"
+
+  fea8d8604de4b80a6c9abf52e30a3671a6978417da1e64a73221e697b1f9a7e0:
+    role: public
+    owner: demo_public_principal
+    name: "示范公共端"
