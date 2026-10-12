@@ -11,9 +11,16 @@ import {
   Globe,
   SlidersHorizontal,
   ExternalLink,
+  PanelLeft,
+  PanelLeftClose,
 } from 'lucide-react';
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) => {
   const {
     currentView,
     setCurrentView,
@@ -67,8 +74,19 @@ export const TopBar: React.FC = () => {
 
   return (
     <header className="h-12 bg-white border-b border-zinc-200 px-5 flex items-center justify-between gap-4 sticky top-0 z-20">
-      {/* 左侧：面包屑与案件即时切换器 (Linear 风格) */}
+      {/* 左侧：边栏折叠开关、面包屑与案件即时切换器 */}
       <div className="flex items-center gap-2 text-xs text-zinc-500 min-w-0">
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title={collapsed ? '展开侧边栏' : '收起侧边栏'}
+            className="p-1.5 -ml-1.5 mr-0.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors duration-150 cursor-pointer shrink-0"
+          >
+            {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
+        )}
+
         <button
           onClick={() => setCurrentView('cases')}
           className="hover:text-zinc-900 transition-colors duration-150 flex items-center gap-1.5 shrink-0 font-medium"
@@ -166,12 +184,12 @@ export const TopBar: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors duration-150 border ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors duration-150 border cursor-pointer ${
             isDrawerOpen
               ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
               : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:text-zinc-900'
           }`}
-          title="打开/关闭右侧德国法权威法源对照窗"
+          title="打开/关闭右侧权威法源对照窗"
         >
           <BookOpen className="w-3.5 h-3.5" />
           <span>法源对照窗</span>

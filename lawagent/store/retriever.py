@@ -22,8 +22,12 @@ from lawagent.store.vec import DenseVectorEngine
 from lawagent.store.rerank import Reranker
 from lawagent.store.graph import SQLiteGraphStore
 
-RE_NORM_EXACT = re.compile(r"(BGB|HGB|GmbHG|ZPO|EGBGB)\s*(?:§|Art\.?)\s*(\d+[a-z]?)", re.IGNORECASE)
-RE_CASE_EXACT = re.compile(r"\b([IVX]{1,5}\s+[A-Z]{1,3}\s+\d{1,4}/\d{2})\b", re.IGNORECASE)
+RE_NORM_EXACT = re.compile(
+    r"(BGB|HGB|GmbHG|ZPO|EGBGB|UCC|DGCL|USC|Rome_I)\s*(?:§|Art\.?|Section\s*)?\s*([0-9a-zA-Z\-\:]+)",
+    re.IGNORECASE,
+)
+RE_CASE_EXACT = re.compile(r"\b([IVX]{1,5}\s+[A-Z]{1,3}\s+\d{1,4}/\d{2}|Intel v\. AMD|Filanto|Unocal)\b", re.IGNORECASE)
+
 
 
 def rrf_fusion(rank_lists: List[List[Tuple[str, float]]], k: int = 60) -> List[Tuple[str, float]]:
@@ -100,10 +104,16 @@ class HybridRetriever:
             "期限": "Fristsetzung",
             "催告期限": "Fristsetzung",
             "时效": "Verjährung",
-            "检验": "Untersuchung Rügepflicht",
-            "通知": "Rügepflicht Mangelanzeige",
+            "检验": "Untersuchung Rügepflicht inspection",
+            "通知": "Rügepflicht Mangelanzeige notice of breach",
             "商行为": "Handelsgeschäft",
-            "商人": "Kaufmann",
+            "商人": "Kaufmann merchant",
+            "适销性": "merchantable merchantability",
+            "默示担保": "implied warranty UCC",
+            "格式条款": "battle of the forms",
+            "商业判断": "business judgment rule BJR",
+            "跨境取证": "28 U.S.C. 1782 discovery",
+            "管辖豁免": "FSIA foreign sovereign immunities",
         }
         if os.path.exists(self.glossary_path):
             try:

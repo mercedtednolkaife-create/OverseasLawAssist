@@ -1,0 +1,39 @@
+{
+  "BGB:§434": {
+    "norm": "BGB § 434 (Sachmangel 物之瑕疵)",
+    "leading_sources": [
+      "Palandt/Grüneberg, BGB, 82. Aufl. 2023, § 434 Rn. 8-24",
+      "Münchener Kommentar zum BGB, 9. Aufl. 2022, § 434 Rn. 15-62"
+    ],
+    "core_doctrine": "主观标准具有绝对优先性（Vorrang der subjektiven Beschaffenheitsvereinbarung）。若合同附有技术规格书、公差标准，即便符合通用市场标准，违反主观规格仍构成物之瑕疵。",
+    "subsumption_rules": [
+      "公差超标：工业高精设备超标 0.05mm 以上即被各联邦州判例统一认定为存在缺陷，除非合同特约豁免。",
+      "交货延误与瑕疵分离：迟延属于给付迟延（Verzug § 286），但若交付带有性能不足之物，自始成立瑕疵救济体系。"
+    ]
+  },
+  "HGB:§377": {
+    "norm": "HGB § 377 (Untersuchungs- und Rügepflicht 商事检验通知义务与失权抗辩)",
+    "leading_sources": [
+      "Baumbach/Hopt, HGB, 42. Aufl. 2023, § 377 Rn. 25-54",
+      "Ebenroth/Boujong, HGB, 4. Aufl. 2020, § 377 Rn. 40-75"
+    ],
+    "core_doctrine": "商法典第 377 条为双方法律行为当事人均为商人（beiderseitiges Handelsgeschäft）时的强制性失权抗辩规则。买方未履行即时检验与通知义务，标的物视为被认可（Genehmigungsfiktion）。",
+    "subsumption_rules": [
+      "通常合理检验期限：普通外观瑕疵为 2-3 工作日；复杂精密工业机械连线带料试机一般为 7-14 天（OLG München 判例标准）。",
+      "通知形式要求：通知须具体阐明瑕疵现象（Rügeinhalt），一般性抱怨或模糊邮件不产生阻断失权的效力。",
+      "免责抗辩：隐蔽瑕疵（Verdeckter Mangel）一经发现须即刻通知；出卖人恶意隐瞒（Arglist）剥夺其援引 § 377 抗辩权。"
+    ]
+  },
+  "GmbHG:§15": {
+    "norm": "GmbHG § 15 (Übertragung von Geschäftsanteilen 股份转让与法定公证形式)",
+    "leading_sources": [
+      "Lutter/Hommelhoff, GmbHG, 20. Aufl. 2020, § 15 Rn. 30-58",
+      "Baumbach/Hueck, GmbHG, 22. Aufl. 2021, § 15 Rn. 22-45"
+    ],
+    "core_doctrine": "德国有限责任公司股份之债权转让协议（Verpflichtungsgeschäft）与物权处分行为（Verfügungsgeschäft）均强制要求办理德国公证人公证证明（notarielle Beurkundung），旨在发挥警告（Warnfunktion）与证据公信功能。",
+    "subsumption_rules": [
+      "违反后果：欠缺公证形式依 BGB § 125 自始无效（nichtig），当事人不得请求强制交割过户。",
+      "境外公证实质等同性（Gleichwertigkeit）：仅瑞士等法域特定受高等法律培训之公证人被 BGH 认可；中国律师见证书在德国司法实践中确定不具备等同效力。"
+    ]
+  }
+}

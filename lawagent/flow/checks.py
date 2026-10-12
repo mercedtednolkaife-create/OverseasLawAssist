@@ -56,7 +56,15 @@ def timepoint_level(
 
 
 def generate_entry_checks(meta: CaseMeta) -> List[EntryCheckItem]:
-    """生成适用法律入口检查清单 (对齐技术方案 5.7 节)"""
+    """生成适用法律入口检查清单 (对齐技术方案 5.7 节与司法解释（二）)"""
+    # 涉美法律案例自适应路由至中国涉外司法实务校准器
+    is_us = (meta.jurisdiction or "").startswith("us_") or any(
+        kw in (meta.choice_of_law or "") for kw in ["美国", "UCC", "纽约", "特拉华", "加州", "US"]
+    )
+    if is_us:
+        from lawagent.flow.us_admissibility_calibrator import USAdmissibilityCalibrator
+        return USAdmissibilityCalibrator.calibrate_entry_checks(meta)
+
     checks: List[EntryCheckItem] = []
 
     # 1. 法律选择条款

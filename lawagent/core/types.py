@@ -183,6 +183,35 @@ class SavedInsight(BaseModel):
     created_at: str = ""
 
 
+class OutcomeBranch(BaseModel):
+    branch_type: Literal["favorable", "unfavorable", "uncertain"] = "favorable"
+    title: str
+    condition_precedent: str          # 假定事实/前提要件
+    substantive_basis: List[str] = Field(default_factory=list) # 适用法条/权威先例
+    key_evidence_required: List[str] = Field(default_factory=list) # 所需关键证据
+    outcome_summary: str              # 裁判倾向推演 (严守条件句)
+    risk_level: Literal["low", "medium", "high"] = "medium"
+
+
+class RedTeamDefense(BaseModel):
+    defense_id: str                   # 'D1', 'D2', 'D3'
+    opposing_claim: str               # 对方可能主张的抗辩切入点
+    lethal_index: Literal["high", "critical", "medium"] = "high" # 威胁烈度
+    opposing_basis: str               # 对方依据之条文/判例
+    counter_weapons: List[str] = Field(default_factory=list) # 我方反制依据与裁判武器 (先例、除外例外规则)
+    factual_counter_point: str        # 事实反驳突破口
+    evidence_checklist: List[str] = Field(default_factory=list) # 下一步关键调取证据清单
+
+
+class StrategicAssessment(BaseModel):
+    case_id: str
+    pivotal_factors: List[str] = Field(default_factory=list) # 胜败摇摆关键变量 / 心证分水岭
+    outcome_branches: List[OutcomeBranch] = Field(default_factory=list)
+    red_team_defenses: List[RedTeamDefense] = Field(default_factory=list)
+    actionable_checklist: List[str] = Field(default_factory=list)
+    updated_at: str = ""
+
+
 class CaseState(BaseModel):
     case_id: str
     snapshot_id: str
@@ -206,6 +235,7 @@ class CaseState(BaseModel):
     findings: List[Finding] = Field(default_factory=list)
     checks: List[CheckItem] = Field(default_factory=list)
     saved_insights: List[SavedInsight] = Field(default_factory=list)
+    strategic_assessment: Optional[StrategicAssessment] = None  # 方案A：胜败边界推演与红队攻防对抗
     unparsed_refs: List[Dict[str, Any]] = Field(default_factory=list)
     dashboard: DashboardMetrics = Field(default_factory=DashboardMetrics)
     status: CaseWorkflowStatus = "draft"

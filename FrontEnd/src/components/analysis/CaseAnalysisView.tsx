@@ -16,9 +16,19 @@ import {
   MinusCircle,
   Bookmark,
   Compass,
+  Network,
+  List,
+  ArrowRight,
+  Layers,
+  FileCheck2,
+  GitCommit,
+  AlertCircle,
+  CheckCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { SimilarCaseItem, EntryCheckItem } from '../../types/lawAgent';
 import { CaseExecutiveSummaryCard } from './CaseExecutiveSummaryCard';
+import { CaseStrategicAssessmentCard } from './CaseStrategicAssessmentCard';
 
 export const CaseAnalysisView: React.FC = () => {
   const { currentCase, openLawModal, openLawDrawer, setCurrentView, isDrawerOpen } = useApp();
@@ -26,6 +36,10 @@ export const CaseAnalysisView: React.FC = () => {
   const [copiedQuestionIndex, setCopiedQuestionIndex] = useState<number | null>(null);
   const [filterIssueKind, setFilterIssueKind] = useState<'all' | 'law' | 'fact'>('all');
   const [filterElementStatus, setFilterElementStatus] = useState<string>('all');
+
+  // B3 证据链视图模式：流程图谱模式 (graph) vs 矩阵清单模式 (list)
+  const [b3ViewMode, setB3ViewMode] = useState<'graph' | 'list'>('graph');
+  const [hoveredTraceChainId, setHoveredTraceChainId] = useState<string | null>(null);
 
   // 当前滚动高亮的模块 ID
   const [activeNavId, setActiveNavId] = useState<string>('module-b1');
@@ -58,6 +72,7 @@ export const CaseAnalysisView: React.FC = () => {
     { id: 'module-summary', label: '全景研判总结' },
     { id: 'module-b1', label: '争议焦点' },
     { id: 'module-b2', label: '要件事实比对' },
+    { id: 'module-strategy', label: '胜败推演与红队攻防' },
     { id: 'module-b3', label: '证据链溯源' },
     { id: 'module-b4', label: '类案判例对照' },
     { id: 'module-b5', label: '入口检查清单' },
@@ -73,6 +88,8 @@ export const CaseAnalysisView: React.FC = () => {
   const entry_checks = useMemo(() => currentCase?.entry_checks || [], [currentCase?.entry_checks]);
   const counsel_questions = useMemo(() => currentCase?.counsel_questions || [], [currentCase?.counsel_questions]);
   const meta = currentCase?.meta;
+  const isUS = meta?.jurisdiction === 'us_commercial' || meta?.choice_of_law?.includes('美国') || meta?.choice_of_law?.includes('UCC');
+  const strategicAssessment = currentCase?.strategic_assessment;
 
   const filteredIssues = useMemo(() => {
     return issues.filter((i) => {
@@ -204,20 +221,86 @@ export const CaseAnalysisView: React.FC = () => {
   };
 
   // 根据要件推断核心法源 ID
-  const getEidForElement = (elId: string) => {
+  const getEidForElement = (el: any) => {
+    if (el?.links && el.links.length > 0 && el.links[0]?.eid) {
+      return el.links[0].eid;
+    }
+    const elId = typeof el === 'string' ? el : el?.element_id;
     switch (elId) {
       case 'e1':
-        return 'E2'; // BGB § 434
+        return isUS ? 'E1' : 'E2';
       case 'e2':
-        return 'E6'; // HGB § 377
+        return isUS ? 'E2' : 'E6';
       case 'e3':
-        return 'E4'; // BGB § 439
+        return isUS ? 'E3' : 'E4';
       case 'e4':
-        return 'E5'; // BGB § 323
+        return isUS ? 'E4' : 'E5';
       default:
         return 'E1';
     }
   };
+
+  // 根据法源 EID 获取规范名称
+  const getNormTitleForEid = (eid: string) => {
+    const ev = currentCase?.evidence?.[eid];
+    if (ev?.ref_id) {
+      return `${ev.ref_id}`;
+    }
+    const normTitles: Record<string, string> = {
+      E1: isUS ? 'UCC § 2-106 (买卖定义)' : 'BGB § 433 (买卖合同之债)',
+      E2: isUS ? 'UCC § 2-314 (适销性担保)' : 'BGB § 434 (物之瑕疵担保)',
+      E3: isUS ? 'UCC § 2-607 (检验通知义务)' : 'BGB § 437 (买受人权利总纲)',
+      E4: isUS ? '28 U.S.C. § 1782 (跨国取证)' : 'BGB § 439 (补正履行请求权)',
+      E5: isUS ? 'UCC § 2-714 (损害赔偿)' : 'BGB § 323 (期限届满解除合同)',
+      E6: isUS ? 'UCC § 2-715 (连带损失)' : 'HGB § 377 (商事检验即时通知失权)',
+    };
+    return normTitles[eid] || `适用法源 (${eid})`;
+  };
+
+  // 构建四阶因果证据链路数据 (Materials -> Facts -> Elements -> Norms)
+  const evidenceChains = useMemo(() => {
+    return elements.map((el, idx) => {
+      const eid = getEidForElement(el);
+      const normTitle = getNormTitleForEid(eid);
+      const linkedFacts = facts.filter((f) => (el.fact_links || []).includes(f.fid));
+      const linkedMaterials = materials.filter((m) =>
+        (el.material_links || []).includes(m.mid) ||
+        linkedFacts.some((f) => (m.fact_ids || []).includes(f.fid))
+      );
+
+      // 判断链路闭环状态
+      const hasMaterials = linkedMaterials.length > 0;
+      const hasDisputedFact = linkedFacts.some((f) => f.disputed);
+
+      let chainStatus: 'closed' | 'warning' | 'gap' = 'closed';
+      let statusDesc = '完全闭环：证据材料充分支撑事实，满足法定构成要件';
+
+      if (!hasMaterials) {
+        chainStatus = 'gap';
+        statusDesc = '证据缺口：缺少直接客观书面材料支撑';
+      } else if (hasDisputedFact) {
+        chainStatus = 'warning';
+        statusDesc = '事实存疑：双方对事实认定存在争议，面临质证挑刺';
+      } else if (el.match_status === 'partial') {
+        chainStatus = 'warning';
+        statusDesc = '部分满足：关键时点凭证待补强 (如检验通知送达回执)';
+      } else if (el.match_status === 'disputed') {
+        chainStatus = 'warning';
+        statusDesc = '面临阻断：德方主张法定除斥期间失权抗辩';
+      }
+
+      return {
+        chainId: `CHAIN-${idx + 1}`,
+        element: el,
+        normEid: eid,
+        normTitle,
+        materials: linkedMaterials,
+        facts: linkedFacts,
+        status: chainStatus,
+        statusDesc,
+      };
+    });
+  }, [elements, facts, materials]);
 
   if (!currentCase) {
     return (
@@ -227,7 +310,7 @@ export const CaseAnalysisView: React.FC = () => {
         </div>
         <h3 className="text-sm font-semibold text-zinc-900">未选择正在处理的案件</h3>
         <p className="text-xs text-zinc-500 mt-1 max-w-sm">
-          请从左侧导航或顶部案卷切换器选择一个涉德案件以查看深度分析包。
+          请从左侧导航或顶部案卷切换器选择一个涉外查明案件以查看深度分析包。
         </p>
         <button
           type="button"
@@ -236,6 +319,36 @@ export const CaseAnalysisView: React.FC = () => {
         >
           返回案件列表
         </button>
+      </div>
+    );
+  }
+
+  if (currentCase.status === 'running') {
+    return (
+      <div className="max-w-[1600px] mx-auto px-6 py-12 space-y-4">
+        <div className="bg-white rounded-xl border border-blue-200/90 shadow-xs p-8 text-center max-w-xl mx-auto space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center mx-auto">
+            <RotateCcw className="w-6 h-6 animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm md:text-base font-bold text-zinc-900">
+              案件【{case_id}】多 Agent 协同流水线正在分析中
+            </h3>
+            <p className="text-xs text-zinc-500 leading-relaxed max-w-md mx-auto">
+              系统正在执行事实要素抽取、准据法检索、四态涵摄与红队攻防推演。各深度分析模块将在流水线就绪后呈现。
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setCurrentView('workspace')}
+              className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 mx-auto"
+            >
+              <span>前往 Agent 工作台观察实时步骤</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -925,8 +1038,21 @@ export const CaseAnalysisView: React.FC = () => {
 
       {/* 
         ========================================================================
+        方案 A：动态胜败边界推演与红队攻防对抗手册
+        包含：胜败摇摆关键变量、If-Then 条件分支推演矩阵、红队致命抗辩反制武器、关键调取补证清单
+        ========================================================================
+      */}
+      <CaseStrategicAssessmentCard
+        strategicAssessment={strategicAssessment}
+        isUS={Boolean(isUS)}
+        openLawDrawer={openLawDrawer}
+        openLawModal={openLawModal}
+      />
+
+      {/* 
+        ========================================================================
         B3 证据链闭环图谱与事实溯源
-        模块强化：卡片化列表、流向清晰指示、明确证据材料与案件事实映射
+        模块强化：图谱流向模式 (DAG Pipeline Flow) 与清单列表模式双视图无缝切换
         ========================================================================
       */}
       <section
@@ -936,23 +1062,54 @@ export const CaseAnalysisView: React.FC = () => {
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              03
+              04
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                 证据链闭环图谱与事实溯源
-                <span className="text-zinc-400 font-normal">| 要件 ← 事实F# ← 证据材料M#</span>
+                <span className="text-zinc-400 font-normal">| 材料 M# ➔ 事实 F# ➔ 要件 EL# ➔ 规范 §</span>
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                审查当事人提交的事实证据材料能否支撑案情事实，标明未闭环之证据链断点
+                审查当事人提交的事实证据材料能否支撑案情事实，标明未闭环之证据链断点与抗辩薄弱点
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-mono text-zinc-400">
-              共 {materials.length} 份证据材料
+          <div className="flex items-center gap-3">
+            {/* 视图模式切换器 (图谱流向模式 vs 清单模式) */}
+            <div className="flex items-center p-0.5 bg-zinc-200/80 rounded-lg text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setB3ViewMode('graph')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
+                  b3ViewMode === 'graph'
+                    ? 'bg-white text-zinc-900 shadow-xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+                title="流程图谱流向视图"
+              >
+                <Network className="w-3.5 h-3.5 text-blue-600" />
+                <span>图谱流向视图</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setB3ViewMode('list')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
+                  b3ViewMode === 'list'
+                    ? 'bg-white text-zinc-900 shadow-xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+                title="材料清单矩阵视图"
+              >
+                <List className="w-3.5 h-3.5 text-zinc-600" />
+                <span>材料矩阵清单</span>
+              </button>
+            </div>
+
+            <span className="text-xs font-mono text-zinc-400 hidden md:inline">
+              {materials.length} 份材料 / {evidenceChains.length} 条推导链
             </span>
+
             <button
               type="button"
               onClick={() => toggleCardCollapse('b3')}
@@ -970,50 +1127,274 @@ export const CaseAnalysisView: React.FC = () => {
 
         {!collapsedCards['b3'] && (
           <div className="p-6">
-            <div className="space-y-3">
-              {materials.map((mat) => (
-                <div
-                  key={mat.mid}
-                  className="p-4 bg-zinc-50/70 hover:bg-zinc-50 rounded-xl border border-zinc-200/90 flex flex-col md:flex-row md:items-start justify-between gap-4 text-xs transition-colors relative overflow-hidden"
-                >
-                  {/* 左侧状态线 */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
-
-                  <div className="space-y-2 flex-1 pl-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-mono font-bold text-[11px]">
-                        {mat.mid}
-                      </span>
-                      <h3 className="font-bold text-zinc-900 text-xs">{mat.name}</h3>
-                      <span className="text-zinc-400 text-[11px]">证明事实:</span>
-                      {(mat.fact_ids || []).map((fid) => (
-                        <span
-                          key={fid}
-                          className="font-mono px-2 py-0.5 bg-zinc-200 rounded font-semibold text-zinc-900 text-[10px]"
-                        >
-                          {fid}
-                        </span>
-                      ))}
-                    </div>
-
-                    <p className="text-zinc-700 leading-relaxed">{mat.desc_zh}</p>
-
-                    {mat.excerpt_zh && (
-                      <div className="p-2.5 bg-white rounded-lg border border-zinc-200/80 text-[11px] text-zinc-800 font-mono italic">
-                        原文摘要: “{mat.excerpt_zh}”
-                      </div>
-                    )}
+            {b3ViewMode === 'graph' ? (
+              /* ================================================================= */
+              /* 模式 1：因果链路闭环流程图谱 (Evidence Flow Graph View)              */
+              /* ================================================================= */
+              <div className="space-y-4">
+                {/* 阶段引导微条 (4 阶段阶梯因果流) */}
+                <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-zinc-100/70 rounded-lg border border-zinc-200/80 text-[11px] font-semibold text-zinc-600">
+                  <div className="col-span-3 flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]">1</span>
+                    <span>客观证据材料 (M#)</span>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 md:pt-1">
-                    <span className="inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-[11px] font-medium font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      已闭环归入证据链
-                    </span>
+                  <div className="col-span-3 flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]">2</span>
+                    <span>案件事实认定 (F#)</span>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]">3</span>
+                    <span>法定构成要件 (EL#)</span>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]">4</span>
+                    <span>法律规范与效果 (§)</span>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* 逐条闭环证据链路卡 */}
+                <div className="space-y-4">
+                  {evidenceChains.map((chain, cIdx) => {
+                    const isClosed = chain.status === 'closed';
+                    const isWarning = chain.status === 'warning';
+
+                    return (
+                      <div
+                        key={chain.chainId}
+                        className={`rounded-xl border transition-all overflow-hidden ${
+                          isClosed
+                            ? 'bg-white border-zinc-200/90 hover:border-blue-300 shadow-2xs'
+                            : isWarning
+                            ? 'bg-amber-50/20 border-amber-200/90 hover:border-amber-300 shadow-2xs'
+                            : 'bg-rose-50/20 border-rose-200/90 hover:border-rose-300 shadow-2xs'
+                        }`}
+                      >
+                        {/* 链路微顶栏：编号 + 要件名称 + 闭环判断 */}
+                        <div className="px-4 py-2 bg-zinc-50/80 border-b border-zinc-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-blue-700 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-[11px]">
+                              链路 #{cIdx + 1}
+                            </span>
+                            <span className="font-semibold text-zinc-900">
+                              {chain.element.name_zh}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-mono">
+                              ({chain.element.element_id})
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {isClosed ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                证据链完整闭环
+                              </span>
+                            ) : isWarning ? (
+                              <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                证据薄弱 / 面临抗辩
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                                <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                                证据链存在断点
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 4 阶因果流向节点区 (桌面端 4 列对齐，移动端纵向流) */}
+                        <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+                          {/* 节点 1：证据材料 (3 列) */}
+                          <div className="lg:col-span-3 space-y-1.5">
+                            <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block lg:hidden">
+                              ① 提交证据材料
+                            </div>
+                            {chain.materials.length > 0 ? (
+                              chain.materials.map((m) => (
+                                <div
+                                  key={m.mid}
+                                  className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 text-xs space-y-1"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono font-bold text-blue-700 text-[11px]">
+                                      {m.mid}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-500 font-medium">
+                                      客观书证
+                                    </span>
+                                  </div>
+                                  <p className="font-medium text-zinc-900 text-xs leading-snug">
+                                    {m.name}
+                                  </p>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-2.5 rounded-lg bg-rose-50/60 border border-dashed border-rose-200 text-xs text-rose-700">
+                                ⚠️ 未单独提供直接书面凭证
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 连线 1 ➔ 2 */}
+                          <div className="hidden lg:flex lg:col-span-1 justify-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-zinc-400 font-mono mb-0.5">证明</span>
+                              <ArrowRight className="w-4 h-4 text-zinc-300" />
+                            </div>
+                          </div>
+
+                          {/* 节点 2：客观事实认定 (3 列) */}
+                          <div className="lg:col-span-3 space-y-1.5">
+                            <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block lg:hidden">
+                              ② 案件事实认定
+                            </div>
+                            {chain.facts.length > 0 ? (
+                              chain.facts.map((f) => (
+                                <div
+                                  key={f.fid}
+                                  className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 text-xs space-y-1"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono font-bold text-blue-700 text-[11px]">
+                                      [{f.fid}]
+                                    </span>
+                                    {f.disputed && (
+                                      <span className="text-[9px] text-amber-800 bg-amber-50 border border-amber-200 px-1 rounded">
+                                        争议事实
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-zinc-800 text-[11px] leading-relaxed line-clamp-3">
+                                    {f.text_zh}
+                                  </p>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-2.5 rounded-lg bg-zinc-50 border border-dashed border-zinc-200 text-xs text-zinc-400">
+                                未直接映射特定 F#
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 连线 2 ➔ 3 */}
+                          <div className="hidden lg:flex lg:col-span-1 justify-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-zinc-400 font-mono mb-0.5">涵摄</span>
+                              <ArrowRight className="w-4 h-4 text-zinc-300" />
+                            </div>
+                          </div>
+
+                          {/* 节点 3：法定构成要件 (2 列) */}
+                          <div className="lg:col-span-2 space-y-1">
+                            <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block lg:hidden">
+                              ③ 法定构成要件
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-blue-50/50 border border-blue-200/70 text-xs space-y-1">
+                              <div className="font-semibold text-zinc-900 text-xs">
+                                {chain.element.name_zh}
+                              </div>
+                              <div className="pt-0.5">
+                                {getMatchStatusBadge(chain.element.match_status)}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 连线 3 ➔ 4 */}
+                          <div className="hidden lg:flex lg:col-span-1 justify-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] text-zinc-400 font-mono mb-0.5">导出</span>
+                              <ArrowRight className="w-4 h-4 text-zinc-300" />
+                            </div>
+                          </div>
+
+                          {/* 节点 4：适用法律规范与请求权基础 (1 列) */}
+                          <div className="lg:col-span-1 flex flex-col items-start gap-1">
+                            <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block lg:hidden">
+                              ④ 适用法律规范
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openLawModal(chain.normEid)}
+                              className="w-full text-left p-2 rounded-lg bg-indigo-50/70 hover:bg-indigo-100/80 border border-indigo-200 text-indigo-900 text-[11px] font-medium transition-colors shadow-2xs group"
+                              title="点击查阅法典原文"
+                            >
+                              <div className="font-mono font-bold text-indigo-700 flex items-center justify-between">
+                                <span>{chain.normEid}</span>
+                                <BookOpen className="w-3 h-3 text-indigo-500 group-hover:scale-110 transition-transform" />
+                              </div>
+                              <span className="text-[10px] text-indigo-950 font-semibold block leading-tight mt-0.5">
+                                {chain.normTitle.split(' ')[0]} {chain.normTitle.split(' ')[1] || ''}
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 链路底栏：闭环判定说明与防守反击提示 */}
+                        <div className="px-4 py-2 bg-zinc-50/60 border-t border-zinc-200/80 text-[11px] text-zinc-600 flex items-center justify-between gap-2">
+                          <span className="leading-relaxed">
+                            <strong className="text-zinc-800">研判结论:</strong> {chain.statusDesc}
+                          </span>
+                          {chain.element.match_note && (
+                            <span className="text-zinc-500 text-[10px] font-mono hidden md:inline truncate max-w-sm">
+                              {chain.element.match_note}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* ================================================================= */
+              /* 模式 2：材料矩阵清单视图 (List View)                               */
+              /* ================================================================= */
+              <div className="space-y-3">
+                {materials.map((mat) => (
+                  <div
+                    key={mat.mid}
+                    className="p-4 bg-zinc-50/70 hover:bg-zinc-50 rounded-xl border border-zinc-200/90 flex flex-col md:flex-row md:items-start justify-between gap-4 text-xs transition-colors relative overflow-hidden"
+                  >
+                    {/* 左侧状态线 */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
+
+                    <div className="space-y-2 flex-1 pl-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-mono font-bold text-[11px]">
+                          {mat.mid}
+                        </span>
+                        <h3 className="font-bold text-zinc-900 text-xs">{mat.name}</h3>
+                        <span className="text-zinc-400 text-[11px]">证明事实:</span>
+                        {(mat.fact_ids || []).map((fid) => (
+                          <span
+                            key={fid}
+                            className="font-mono px-2 py-0.5 bg-zinc-200 rounded font-semibold text-zinc-900 text-[10px]"
+                          >
+                            {fid}
+                          </span>
+                        ))}
+                      </div>
+
+                      <p className="text-zinc-700 leading-relaxed">{mat.desc_zh}</p>
+
+                      {mat.excerpt_zh && (
+                        <div className="p-2.5 bg-white rounded-lg border border-zinc-200/80 text-[11px] text-zinc-800 font-mono italic">
+                          原文摘要: “{mat.excerpt_zh}”
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 md:pt-1">
+                      <span className="inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-[11px] font-medium font-mono">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        已闭环归入证据链
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -1031,15 +1412,17 @@ export const CaseAnalysisView: React.FC = () => {
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              04
+              05
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                德意志联邦最高法院 (BGH) 类似判例对照
+                {isUS ? '美国联邦法院 / 州法院类似先例对照' : '德意志联邦最高法院 (BGH) / 州高等法院类似判例对照'}
                 <span className="text-zinc-400 font-normal">| 裁判要旨权威比对</span>
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                以本案事实与联邦法院 Tatbestand 做向量与语义比对，分析裁判要旨相同点与差异，不预断本案结果
+                {isUS
+                  ? '以本案案件事实与美国联邦法院及州法院判例展开法律检索与要件比对，分析裁判要旨相同点与差异'
+                  : '以本案事实与联邦法院 Tatbestand 做向量与语义比对，分析裁判要旨相同点与差异，不预断本案结果'}
               </p>
             </div>
           </div>
@@ -1102,7 +1485,7 @@ export const CaseAnalysisView: React.FC = () => {
                   {/* 法院核心观点代码块 (逐字原句) */}
                   <div className="p-3.5 bg-white rounded-lg border border-zinc-200 space-y-2 text-xs ml-2">
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
-                      判例对法律问题之确立观点 (逐字原句 quote)
+                      {isUS ? '先例对争议焦点之确立观点 (Holding / Opinion Quote)' : '判例对法律问题之确立观点 (逐字原句 quote)'}
                     </span>
                     <p className="font-mono text-[11px] text-zinc-900 leading-relaxed italic bg-zinc-50 p-2.5 rounded border border-zinc-100">
                       "{sc.court_view_quote_de}"
@@ -1159,7 +1542,7 @@ export const CaseAnalysisView: React.FC = () => {
         >
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-              05
+              06
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
@@ -1210,7 +1593,7 @@ export const CaseAnalysisView: React.FC = () => {
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
-                06
+                07
               </span>
               <div>
                 <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">

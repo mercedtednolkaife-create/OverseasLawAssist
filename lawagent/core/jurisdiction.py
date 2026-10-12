@@ -101,6 +101,18 @@ JurisdictionRegistry.register(
         name_zh="德国联邦法",
         primary_language="de",
         citation_standard="bundesrecht",
-        default_laws=["BGB", "HGB", "GmbHG", "ZPO", "EGBGB"],
+        default_laws=["BGB", "HGB", "GmbHG", "ZPO", "EGBGB", "Rome_I"],
     )
 )
+
+# 注册美国商事与联邦法 (us_commercial)
+JurisdictionRegistry.register(
+    JurisdictionMetadata(
+        code="us_commercial",
+        name_zh="美国商事与联邦法",
+        primary_language="en",
+        citation_standard="bluebook",
+        default_laws=["UCC", "DGCL", "USC"],
+    )
+)
+

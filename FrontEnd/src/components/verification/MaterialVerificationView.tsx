@@ -6,14 +6,37 @@ import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, XCircle, ArrowRight
 
 export const MaterialVerificationView: React.FC = () => {
   const { currentCase, openLawModal, showToast } = useApp();
-  const [inputText, setInputText] = useState(
-    `对方当事人提交了以下德国法法律依据作为抗辩理由：
+
+  const isUS =
+    currentCase?.meta?.jurisdiction?.startsWith('us_') ||
+    Boolean(
+      currentCase?.meta?.choice_of_law &&
+        ['美国', 'UCC', '纽约', '特拉华', '加州', 'US'].some((kw) =>
+          currentCase.meta.choice_of_law?.includes(kw)
+        )
+    );
+
+  const germanDefaultText = `对方当事人提交了以下德国法法律依据作为抗辩理由：
 1. 引用德国民法典第433条第1款第2句：“出卖人负有交付无瑕疵之物之义务”。
 2. 引用德国民法典第434条主张只要货物符合约定品质即不构成物之瑕疵。
-3. 引用联邦最高法院判例 BGH VIII ZR 12/20，抗辩称解除合同必须事先催告并指定合理履行期限。`
-  );
+3. 引用联邦最高法院判例 BGH VIII ZR 12/20，抗辩称解除合同必须事先催告并指定合理履行期限。`;
+
+  const usDefaultText = `对方当事人提交了以下涉美法律依据作为抗辩理由：
+1. 引用美国统一商法典 UCC § 2-607(3)(a)：“买受人必须在发现或应当发现违约后的合理时间内通知出卖人，否则丧失一切救济权利”。
+2. 引用 UCC § 2-316 免责条款主张双方合同中已排除默示适销性担保 (Implied Warranty of Merchantability)。
+3. 引用联邦先例 Eastern Air Lines v. McDonnell Douglas, 532 F.2d 957，抗辩称原告在受领货物23日后方发出异议已构成严重逾期。`;
+
+  const [inputText, setInputText] = useState(isUS ? usDefaultText : germanDefaultText);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MaterialVerificationResult | null>(null);
+
+  React.useEffect(() => {
+    if (isUS) {
+      setInputText((prev) => (prev === germanDefaultText || !prev ? usDefaultText : prev));
+    } else {
+      setInputText((prev) => (prev === usDefaultText || !prev ? germanDefaultText : prev));
+    }
+  }, [isUS, currentCase?.case_id]);
 
   const getMatchedEid = (refId: string): string => {
     if (!currentCase?.evidence) return 'E1';
@@ -22,6 +45,11 @@ export const MaterialVerificationView: React.FC = () => {
         return eid;
       }
     }
+    if (refId.includes('2-607')) return 'E2';
+    if (refId.includes('2-314')) return 'E1';
+    if (refId.includes('2-714')) return 'E3';
+    if (refId.includes('1782')) return 'E4';
+    if (refId.includes('Eastern') || refId.includes('532')) return 'E5';
     if (refId.includes('434')) return 'E2';
     if (refId.includes('433')) return 'E1';
     if (refId.includes('437')) return 'E3';
@@ -57,7 +85,9 @@ export const MaterialVerificationView: React.FC = () => {
           当事人提交外国法材料真实性与现行性核验
         </h1>
         <p className="text-xs text-zinc-500 mt-0.5">
-          对当事人主张或提交的德意志联邦法法条、案号及引文进行真实性比对、现行效力核验及判例全文要件审查（对齐解释（二）第三条）
+          {isUS
+            ? '对当事人主张或提交的美国统一商法典 (UCC) / 联邦与州成文法法条、法院先例及引文进行真实性比对、Shepardizing 现行有效性核验及判例全文要件审查（对齐解释（二）第三条）'
+            : '对当事人主张或提交的德意志联邦法法条、案号及引文进行真实性比对、现行效力核验及判例全文要件审查（对齐解释（二）第三条）'}
         </p>
       </div>
 
@@ -71,19 +101,25 @@ export const MaterialVerificationView: React.FC = () => {
             rows={5}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="粘贴含《德国民法典》条文引注、判例案号或陈述的文本..."
+            placeholder={
+              isUS
+                ? '粘贴含 UCC/DGCL 条文引注、美国联邦/州法院判例引证或抗辩陈述的文本...'
+                : '粘贴含《德国民法典》条文引注、判例案号或陈述的文本...'
+            }
             className="w-full px-3 py-2 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-zinc-400 font-mono text-zinc-800 leading-relaxed bg-zinc-50/50 focus:bg-white"
           />
         </div>
 
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-400 font-mono">
-            支持自动抽提 § 法条条文、BGH 联邦法院案号并核验文字一致率
+            {isUS
+              ? '支持自动抽提 UCC/DGCL/USC 法条、联邦巡回法院/最高法院案号并核验文字一致率与好法有效性'
+              : '支持自动抽提 § 法条条文、BGH 联邦法院案号并核验文字一致率'}
           </span>
           <button
             onClick={handleVerify}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-150 shadow-xs disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-150 shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <span>{loading ? '正在比对官方库源...' : '执行逐项核验'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -133,8 +169,8 @@ export const MaterialVerificationView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openLawModal(getMatchedEid(it.ref_id))}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition-colors"
-                            title="查阅该法源全文与德汉对照"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition-colors cursor-pointer"
+                            title={isUS ? '查阅该法源全文与英汉对照' : '查阅该法源全文与德汉对照'}
                           >
                             <BookOpen className="w-3 h-3 text-blue-600" />
                             <span>查阅条文</span>

@@ -150,15 +150,24 @@ def test_export_docx_endpoint(client):
 
 def test_agent_workflow_and_chat_endpoints(client):
     """测试 9: Agent 工作台协同轨迹与 Copilot 追问接口"""
-    # 1. 获取 C001 的 6 大 Agent 流水线
+    # 1. 获取 C001 的 7 大 Agent 流水线
     wf_res = client.get("/api/cases/C001/agent-workflow")
     assert wf_res.status_code == 200
     wf_data = wf_res.json()
-    assert wf_data["total_steps"] == 6
-    assert len(wf_data["steps"]) == 6
+    assert wf_data["total_steps"] == 7
+    assert len(wf_data["steps"]) == 7
     step_ids = [s["step_id"] for s in wf_data["steps"]]
-    assert step_ids == ["extract", "precheck", "retrieval", "subsumption", "judge", "drafter"]
-    assert wf_data["steps"][4]["model"] == "deepseek-v4-pro-0813"
+    assert step_ids == ["extract", "precheck", "retrieval", "subsumption", "red_team_strategist", "judge", "drafter"]
+    assert wf_data["steps"][5]["model"] == "deepseek-v4-pro-0813"
+
+    # 1.1 方案 A：获取动态胜败边界推演与红队攻防对抗评估
+    strat_res = client.get("/api/cases/C001/strategic-assessment")
+    assert strat_res.status_code == 200
+    strat_data = strat_res.json()
+    assert strat_data["case_id"] == "C001"
+    assert len(strat_data["outcome_branches"]) >= 3
+    assert len(strat_data["red_team_defenses"]) >= 3
+    assert len(strat_data["pivotal_factors"]) >= 3
 
     # 2. 追问 Copilot (实务端中立研判)
     chat_payload = {

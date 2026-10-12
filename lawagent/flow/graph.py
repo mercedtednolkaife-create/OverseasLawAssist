@@ -18,6 +18,7 @@ from lawagent.flow.nodes import (
     s3_decompose_node,
     researcher_node,
     matcher_node,
+    red_team_strategist_node,
     translator_node,
     drafter_node,
     critic_node,
@@ -57,6 +58,7 @@ def build_law_graph(checkpointer: Optional[Any] = None):
     builder.add_node("s3_decompose", s3_decompose_node)
     builder.add_node("researcher", researcher_node)
     builder.add_node("matcher", matcher_node)
+    builder.add_node("red_team_strategist", red_team_strategist_node)
     builder.add_node("translator", translator_node)
     builder.add_node("drafter", drafter_node)
     builder.add_node("critic", critic_node)
@@ -80,7 +82,8 @@ def build_law_graph(checkpointer: Optional[Any] = None):
     )
 
     builder.add_edge("researcher", "matcher")
-    builder.add_edge("matcher", "translator")
+    builder.add_edge("matcher", "red_team_strategist")
+    builder.add_edge("red_team_strategist", "translator")
     builder.add_edge("translator", "drafter")
     builder.add_edge("drafter", "critic")
     builder.add_edge("critic", "s8_review")
@@ -143,6 +146,10 @@ class LawWorkflowRunner:
                 target_node = "s3_decompose"
             elif state_obj.current_node == "s3_decompose":
                 target_node = "researcher"
+            elif state_obj.current_node == "matcher":
+                target_node = "red_team_strategist"
+            elif state_obj.current_node == "red_team_strategist":
+                target_node = "translator"
             elif state_obj.current_node == "s8_review":
                 target_node = "s9_export"
             else:

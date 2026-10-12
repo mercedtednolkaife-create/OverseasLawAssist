@@ -7,13 +7,14 @@ export type UserRole = 'public' | 'judicial' | 'practitioner';
 export type RunMode = 'full' | 'lite' | 'retrieval';
 
 export interface CaseMeta {
+  jurisdiction?: string;  // 'de_federal' | 'us_commercial'
   contract_type?: string;
   parties: string[];
   contract_date?: string; // ISO 日期，合同订立日 (必填)
   event_date?: string;    // 主要事实发生日 (建议填写)
-  choice_of_law?: string; // 选法条款 (如：德国法)
+  choice_of_law?: string; // 选法条款 (如：德国法 / 美国纽约州法UCC)
   cisg_excluded?: boolean | null; // null 表示未确认，触发 CISG 闸门
-  both_merchants?: boolean;       // 是否均为商人 (触发 HGB § 377)
+  both_merchants?: boolean;       // 是否均为商人 (触发 HGB § 377 / UCC § 2-104)
 }
 
 export interface Claim {
@@ -209,6 +210,7 @@ export interface CaseState {
   findings: Finding[];
   checks: CheckItem[];
   saved_insights?: SavedInsight[];
+  strategic_assessment?: StrategicAssessment;
   dashboard: DashboardMetrics;
   unparsed_refs: { raw: string; span?: [number, number] }[];
   status: CaseWorkflowStatus;
@@ -319,7 +321,7 @@ export interface AgentWorkflowStep {
   name: string;
   role_desc: string;
   model: string;
-  status: 'completed' | 'verified' | 'delivered' | 'running' | 'idle';
+  status: 'completed' | 'verified' | 'delivered' | 'running' | 'idle' | 'pending';
   duration_ms: number;
   inputs_summary: string;
   outputs_summary: string;
@@ -366,5 +368,34 @@ export interface CaseChatResponse {
   mode?: 'neutral' | 'red_teaming';
   referenced_statutes: string[];
   referenced_issues: string[];
+}
+
+export interface OutcomeBranch {
+  branch_type: 'favorable' | 'unfavorable' | 'uncertain';
+  title: string;
+  condition_precedent: string; // 假定事实/前提要件
+  substantive_basis: string[]; // 适用法条/权威先例
+  key_evidence_required: string[]; // 所需关键证据
+  outcome_summary: string; // 裁判倾向推演 (严守条件句)
+  risk_level: 'low' | 'medium' | 'high';
+}
+
+export interface RedTeamDefense {
+  defense_id: string; // 'D1', 'D2', 'D3'
+  opposing_claim: string; // 对方可能主张的抗辩切入点
+  lethal_index: 'high' | 'critical' | 'medium'; // 威胁烈度
+  opposing_basis: string; // 对方依据之条文/判例
+  counter_weapons: string[]; // 我方反制依据与裁判武器
+  factual_counter_point: string; // 事实反驳突破口
+  evidence_checklist: string[]; // 下一步关键调取证据清单
+}
+
+export interface StrategicAssessment {
+  case_id: string;
+  pivotal_factors: string[]; // 胜败摇摆关键变量 / 心证分水岭
+  outcome_branches: OutcomeBranch[];
+  red_team_defenses: RedTeamDefense[];
+  actionable_checklist: string[];
+  updated_at?: string;
 }
 

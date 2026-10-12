@@ -277,31 +277,33 @@ def init_snapshot_db(db_path: str) -> sqlite3.Connection:
     return conn
 
 
-def init_state_db(db_path: str = "data/state/state.sqlite") -> sqlite3.Connection:
+def init_state_db(db_path: str = "data/state/state.sqlite") -> None:
     """初始化并配置运行库（开启 WAL 与 busy_timeout）"""
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    conn.executescript(STATE_DB_SCHEMA)
+    conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.executescript(STATE_DB_SCHEMA)
 
-    # 动态迁移补充缺失字段
-    migrations = [
-        "ALTER TABLE experts ADD COLUMN title TEXT",
-        "ALTER TABLE experts ADD COLUMN affiliation TEXT",
-        "ALTER TABLE consults ADD COLUMN expert_name TEXT",
-        "ALTER TABLE consults ADD COLUMN evidence_summary TEXT",
-        "ALTER TABLE consults ADD COLUMN conflict_affirmed INT DEFAULT 1"
-    ]
-    for sql in migrations:
-        try:
-            conn.execute(sql)
-        except Exception:
-            pass
+        # 动态迁移补充缺失字段
+        migrations = [
+            "ALTER TABLE experts ADD COLUMN title TEXT",
+            "ALTER TABLE experts ADD COLUMN affiliation TEXT",
+            "ALTER TABLE consults ADD COLUMN expert_name TEXT",
+            "ALTER TABLE consults ADD COLUMN evidence_summary TEXT",
+            "ALTER TABLE consults ADD COLUMN conflict_affirmed INT DEFAULT 1"
+        ]
+        for sql in migrations:
+            try:
+                conn.execute(sql)
+            except Exception:
+                pass
 
-    conn.commit()
-    return conn
+        conn.commit()
+    finally:
+        conn.close()
 
 
 class StateDBManager:
@@ -322,18 +324,23 @@ class StateDBManager:
             return cls._instance
 
     def get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        conn = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("PRAGMA synchronous=NORMAL")
         return conn
 
     def execute_write(self, func, *args, **kwargs):
-        """将写操作串行化，防止 SQLite 锁竞争"""
+        """将写操作串行化，防止 SQLite 锁竞争并强制关闭连接"""
         with self._write_lock:
-            with self.get_connection() as conn:
-                res = func(conn, *args, **kwargs)
-                conn.commit()
+            conn = self.get_connection()
+            try:
+                with conn:
+                    res = func(conn, *args, **kwargs)
                 return res
+            finally:
+                conn.close()
 
     def save_case(self, state: Any, title: Optional[str] = None):
         """保存或更新案件状态"""
@@ -350,7 +357,7 @@ class StateDBManager:
         created_at = state_obj.created_at or now
         updated_at = now
 
-        resolved_title = title or (state_obj.facts_zh[:40] + "..." if len(state_obj.facts_zh) > 40 else state_obj.facts_zh) or f"德国法查明案件-{case_id}"
+        resolved_title = title or (state_obj.facts_zh[:40] + "..." if len(state_obj.facts_zh) > 40 else state_obj.facts_zh) or f"涉外法查明案件-{case_id}"
 
         def _do_save(conn):
             cur = conn.cursor()
@@ -372,45 +379,51 @@ class StateDBManager:
         self.execute_write(_do_save)
 
     def get_case(self, case_id: str) -> Optional[Any]:
-        """获取指定案件完整状态"""
+        """获取指定案件完整状态（严格保障释放数据库句柄）"""
         from lawagent.core.types import CaseState
         conn = self.get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT state_json FROM cases WHERE case_id = ?", (case_id,))
-        row = cur.fetchone()
-        if not row or not row["state_json"]:
-            return None
-        return CaseState.model_validate_json(row["state_json"])
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT state_json FROM cases WHERE case_id = ?", (case_id,))
+            row = cur.fetchone()
+            if not row or not row["state_json"]:
+                return None
+            return CaseState.model_validate_json(row["state_json"])
+        finally:
+            conn.close()
 
     def list_cases(self, role: Optional[str] = None) -> List[Any]:
-        """列出案件概要清单"""
+        """列出案件概要清单（严格保障释放数据库句柄）"""
         from lawagent.core.types import CaseSummary
         conn = self.get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT case_id, snapshot_id, mode, status, title, contract_type, contract_date, created_at, updated_at, state_json FROM cases ORDER BY updated_at DESC")
-        rows = cur.fetchall()
-        summaries = []
-        for r in rows:
-            issues_cnt = 1
-            try:
-                import json
-                sdata = json.loads(r["state_json"])
-                issues_cnt = len(sdata.get("issues", [])) or 1
-            except Exception:
-                pass
-            summaries.append(CaseSummary(
-                case_id=r["case_id"],
-                title=r["title"] or f"德国法查明案件-{r['case_id']}",
-                contract_type=r["contract_type"] or "国际货物买卖合同",
-                contract_date=r["contract_date"],
-                created_at=r["created_at"] or "",
-                updated_at=r["updated_at"] or "",
-                status=r["status"] or "draft",
-                mode=r["mode"] or "full",
-                snapshot_id=r["snapshot_id"] or "",
-                issues_count=issues_cnt
-            ))
-        return summaries
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT case_id, snapshot_id, mode, status, title, contract_type, contract_date, created_at, updated_at, state_json FROM cases ORDER BY updated_at DESC")
+            rows = cur.fetchall()
+            summaries = []
+            for r in rows:
+                issues_cnt = 1
+                try:
+                    import json
+                    sdata = json.loads(r["state_json"])
+                    issues_cnt = len(sdata.get("issues", [])) or 1
+                except Exception:
+                    pass
+                summaries.append(CaseSummary(
+                    case_id=r["case_id"],
+                    title=r["title"] or f"涉外法查明案件-{r['case_id']}",
+                    contract_type=r["contract_type"] or "国际货物买卖合同",
+                    contract_date=r["contract_date"],
+                    created_at=r["created_at"] or "",
+                    updated_at=r["updated_at"] or "",
+                    status=r["status"] or "draft",
+                    mode=r["mode"] or "full",
+                    snapshot_id=r["snapshot_id"] or "",
+                    issues_count=issues_cnt
+                ))
+            return summaries
+        finally:
+            conn.close()
 
     def delete_case(self, case_id: str) -> bool:
         """删除案件"""
@@ -421,28 +434,31 @@ class StateDBManager:
         return True
 
     def list_experts(self) -> List[Dict[str, Any]]:
-        """获取专家名录"""
+        """获取专家名录（严格保障释放数据库句柄）"""
         conn = self.get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM experts")
-        rows = cur.fetchall()
-        if not rows:
-            self._seed_experts()
+        try:
+            cur = conn.cursor()
             cur.execute("SELECT * FROM experts")
             rows = cur.fetchall()
-        result = []
-        for r in rows:
-            result.append({
-                "expert_id": r["expert_id"],
-                "name": r["name"],
-                "title": r["title"] or "德国法特聘专家",
-                "affiliation": r["affiliation"] or "马克斯·普朗克研究所 / 汉堡大学",
-                "languages": [s.strip() for s in (r["langs"] or "德语, 英语, 中文").split(",")],
-                "fields": [s.strip() for s in (r["fields"] or "德国民商法, CISG, 国际私法").split(",")],
-                "qualification": r["qualification"] or "德国第二次国家司法考试合格 (Assessor iur.)",
-                "conflict_declared": bool(r["conflict_declared"])
-            })
-        return result
+            if not rows:
+                self._seed_experts()
+                cur.execute("SELECT * FROM experts")
+                rows = cur.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    "expert_id": r["expert_id"],
+                    "name": r["name"],
+                    "title": r["title"] or "德国法特聘专家",
+                    "affiliation": r["affiliation"] or "马克斯·普朗克研究所 / 汉堡大学",
+                    "languages": [s.strip() for s in (r["langs"] or "德语, 英语, 中文").split(",")],
+                    "fields": [s.strip() for s in (r["fields"] or "德国民商法, CISG, 国际私法").split(",")],
+                    "qualification": r["qualification"] or "德国第二次国家司法考试合格 (Assessor iur.)",
+                    "conflict_declared": bool(r["conflict_declared"])
+                })
+            return result
+        finally:
+            conn.close()
 
     def _seed_experts(self):
         experts = [
@@ -461,29 +477,32 @@ class StateDBManager:
         self.execute_write(_do_seed)
 
     def list_consults(self, case_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """获取咨询流转记录"""
+        """获取咨询流转记录（严格保障释放数据库句柄）"""
         conn = self.get_connection()
-        cur = conn.cursor()
-        if case_id:
-            cur.execute("SELECT * FROM consults WHERE case_id = ? ORDER BY updated_at DESC", (case_id,))
-        else:
-            cur.execute("SELECT * FROM consults ORDER BY updated_at DESC")
-        rows = cur.fetchall()
-        result = []
-        for r in rows:
-            result.append({
-                "consult_id": r["consult_id"],
-                "case_id": r["case_id"],
-                "expert_id": r["expert_id"],
-                "expert_name": r["expert_name"] or "德国法专家",
-                "status": r["status"] or "dispatched",
-                "question_snapshot": r["question_snapshot"] or "",
-                "evidence_summary": r["evidence_summary"] or "",
-                "reply": r["reply"] or "",
-                "conflict_affirmed": bool(r["conflict_affirmed"]),
-                "updated_at": r["updated_at"] or ""
-            })
-        return result
+        try:
+            cur = conn.cursor()
+            if case_id:
+                cur.execute("SELECT * FROM consults WHERE case_id = ? ORDER BY updated_at DESC", (case_id,))
+            else:
+                cur.execute("SELECT * FROM consults ORDER BY updated_at DESC")
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    "consult_id": r["consult_id"],
+                    "case_id": r["case_id"],
+                    "expert_id": r["expert_id"],
+                    "expert_name": r["expert_name"] or "德国法专家",
+                    "status": r["status"] or "dispatched",
+                    "question_snapshot": r["question_snapshot"] or "",
+                    "evidence_summary": r["evidence_summary"] or "",
+                    "reply": r["reply"] or "",
+                    "conflict_affirmed": bool(r["conflict_affirmed"]),
+                    "updated_at": r["updated_at"] or ""
+                })
+            return result
+        finally:
+            conn.close()
 
     def save_consult(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """保存或新增咨询流转记录"""

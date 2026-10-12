@@ -23,6 +23,7 @@ import {
   CaseChatResponse,
   SavedInsight,
   SaveInsightPayload,
+  StrategicAssessment,
 } from '../types/lawAgent';
 
 export const lawAgentApi = {
@@ -43,6 +44,16 @@ export const lawAgentApi = {
    */
   async getCase(caseId: string): Promise<CaseState> {
     return await request<CaseState>(`/cases/${caseId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * 获取案件动态胜败边界推演与红队攻防对抗评估 (方案 A)
+   * 对应 GET /cases/{id}/strategic-assessment
+   */
+  async getStrategicAssessment(caseId: string): Promise<StrategicAssessment> {
+    return await request<StrategicAssessment>(`/cases/${caseId}/strategic-assessment`, {
       method: 'GET',
     });
   },

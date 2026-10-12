@@ -14,6 +14,7 @@ from lawagent.core.types import (
     CaseState, CaseMeta, Fact, Claim, Material, LegalQuestion, Issue, EntryCheckItem,
     ElementState, Evidence, Finding, Statement, CheckItem, DashboardMetrics, SimilarCaseItem
 )
+from lawagent.flow.strategist import build_strategic_assessment
 
 
 def seed_demo_cases_if_empty(db: StateDBManager):
@@ -298,6 +299,7 @@ def seed_demo_cases_if_empty(db: StateDBManager):
             updated_at="2026-10-10T12:30:00Z",
             current_node="s9_export"
         )
+        c1.strategic_assessment = build_strategic_assessment(c1)
         db.save_case(c1, title="中德精密机床买卖合同物之瑕疵与救济权查明案")
 
     # Case 2: 中德工业机器人采购给付迟延与所失利益赔偿案
@@ -577,6 +579,7 @@ def seed_demo_cases_if_empty(db: StateDBManager):
             updated_at="2026-10-10T14:40:00Z",
             current_node="s9_export"
         )
+        c2.strategic_assessment = build_strategic_assessment(c2)
         db.save_case(c2, title="中德工业机器人采购给付迟延与所失利益赔偿案")
 
     # Case 3: 跨国投资并购德国有限责任公司(GmbH)股权转让合同公证形式要件查明案
@@ -806,7 +809,318 @@ def seed_demo_cases_if_empty(db: StateDBManager):
             updated_at="2026-10-10T16:45:00Z",
             current_node="s9_export"
         )
+        c3.strategic_assessment = build_strategic_assessment(c3)
         db.save_case(c3, title="跨国投资并购德国有限责任公司(GmbH)股权转让合同公证形式要件查明案")
+
+    # Case 4: 中美跨国半导体晶圆检测设备买卖合同违约与 UCC 默示适销性担保争议查明案 (美国法域)
+    if "C004" not in existing_ids:
+        c4 = CaseState(
+            case_id="C004",
+            snapshot_id="20261010-gii-v0.7",
+            mode="full",
+            facts_zh="2023年5月10日，原告中国上海微电子科技公司与被告美国加州半导体仪器系统公司签署《高精度晶圆缺陷光学检测机台采购协议》，约定总价款280万美元，准据法明确约定为美国法律（纽约州法及统一商法典UCC），明文排除CISG。原告依约开立信用证并全额受领机台。2023年7月5日机台在净化间通电试运行，原告质检团队连续7天测试发现其亚微米级重复检测偏差达0.28微米，严重超出合同技术附件要求的0.05微米基准，导致晶圆良率判定紊乱。原告于2023年7月28日（试运行第23天）向美方出具正式书面违约通知，要求派员调试或换货。美方大律师抗辩称：买方已接收货物且投入试运行，依据 UCC § 2-607(3)(a)，买方未在合理时间内发出瑕疵通知，依法已丧失全部救济权利；且技术附件未构成明示担保。原告遂起诉请求退还货款并赔偿停机间接损失。",
+            claims_zh="请求依 UCC § 2-601/§ 2-714 拒收并退还全额货款 280 万美元；请求依 UCC § 2-715 赔偿试运行净化间物料报废及停机可得利益损失 45 万美元",
+            meta=CaseMeta(
+                jurisdiction="us_commercial",
+                contract_type="跨国半导体高精设备买卖合同",
+                parties=["上海微电子科技公司", "加州半导体仪器系统公司"],
+                contract_date="2023-05-10",
+                event_date="2023-07-05",
+                choice_of_law="美国纽约州法及统一商法典 (UCC)",
+                cisg_excluded=True,
+                both_merchants=True
+            ),
+            flags=["US_UCC_CHECK", "TIME_POINT_YELLOW"],
+            timepoint={
+                "level": "yellow",
+                "reasons": ["合同选法纽约州法与UCC统一商法典，适用现行UCC Article 2买卖法官方文本"]
+            },
+            entry_checks=[
+                EntryCheckItem(
+                    name="合同是否明确约定适用美国法及排除CISG",
+                    status="satisfied",
+                    detail="合同选法条款约定适用美国纽约州法及UCC，且明确排除CISG，当事人意思自治合法有效。"
+                ),
+                EntryCheckItem(
+                    name="双方当事人商事实体资格审查 (Merchants Under UCC)",
+                    status="satisfied",
+                    detail="双方均为专业从事半导体设备研发与制造的商事实体，属于 UCC § 2-104 所定义的典型商人（Merchants）。"
+                ),
+                EntryCheckItem(
+                    name="时效与除斥期间初核 (UCC § 2-725 诉讼时效)",
+                    status="satisfied",
+                    detail="违约行为发生于2023年7月，未超过 UCC § 2-725 规定的4年买卖合同违约诉讼时效。"
+                )
+            ],
+            issues=[
+                Issue(
+                    issue_id="IS-1",
+                    kind="law",
+                    text_zh="涉案机台检测重复精度偏离合同技术附件基准，是否违反《美国统一商法典》(UCC) § 2-314 默示适销性担保及 § 2-313 明示担保？",
+                    claim_ids=["C1"],
+                    element_ids=["e2"]
+                ),
+                Issue(
+                    issue_id="IS-2",
+                    kind="fact",
+                    text_zh="买方在净化间通电试运行第23天发出违约通知，是否满足 UCC § 2-607(3)(a) '在合理时间内通知 (within a reasonable time)' 之法定要件而阻断失权抗辩？",
+                    claim_ids=["C1"],
+                    element_ids=["e3"]
+                ),
+                Issue(
+                    issue_id="IS-3",
+                    kind="law",
+                    text_zh="买方主张的净化间物料报废及产线停工损失，是否符合 UCC § 2-715 间接损失之'可预见性'与因果关系要求？",
+                    claim_ids=["C2"],
+                    element_ids=["e4"]
+                )
+            ],
+            facts=[
+                Fact(fid="F1", text_zh="双方于2023年5月10日签署买卖协议并选法美国法，明确排除CISG适用", span=(0, 52)),
+                Fact(fid="F2", text_zh="2023年7月5日通电试运行，经连续7天测试重复偏差达0.28微米，严重超标", span=(70, 120), disputed=True),
+                Fact(fid="F3", text_zh="原告于试运行第23天发出正式书面违约整改函，美方以逾期检验为由拒绝保修", span=(130, 185))
+            ],
+            claims=[
+                Claim(cid="C1", party="上海微电子科技公司", text_zh="拒收并退还全额货款 280 万美元"),
+                Claim(cid="C2", party="上海微电子科技公司", text_zh="赔偿净化间物料报废及停工间接损失 45 万美元")
+            ],
+            elements=[
+                ElementState(
+                    qid="Q1",
+                    element_id="e1",
+                    name_zh="买卖合同合法有效且出卖人具备商人资质",
+                    status="covered",
+                    links=[{"eid": "E1", "relation": "supports"}],
+                    norm_eid="E1",
+                    fact_links=["F1"],
+                    material_links=["M1"],
+                    match_status="satisfied",
+                    match_note="双方签署书面采购协议并已实际履行，符合 UCC § 2-106 及 § 2-201 形式要件。"
+                ),
+                ElementState(
+                    qid="Q1",
+                    element_id="e2",
+                    name_zh="标的物存在不符合商销性品质之瑕疵",
+                    status="covered",
+                    links=[{"eid": "E1", "relation": "supports"}],
+                    norm_eid="E1",
+                    fact_links=["F2"],
+                    material_links=["M1", "M2"],
+                    match_status="satisfied",
+                    match_note="重复检测精度达0.28微米严重超出技术协议0.05微米基准，违反 UCC § 2-314 适销性默示担保及 § 2-313 明示技术担保。"
+                ),
+                ElementState(
+                    qid="Q1",
+                    element_id="e3",
+                    name_zh="买受人在受领后合理期限内履行违约通知义务",
+                    status="covered",
+                    links=[{"eid": "E2", "relation": "supports"}],
+                    norm_eid="E2",
+                    fact_links=["F3"],
+                    material_links=["M3"],
+                    match_status="partial",
+                    match_note="美方主张23天超出合理期间失权；依第二巡回法院判例，高度复杂工业机台需连线联调，23天属于合理检验容许期间，建议补强调试日志凭证。"
+                ),
+                ElementState(
+                    qid="Q1",
+                    element_id="e4",
+                    name_zh="附带损失与间接损失具备可预见性及因果关系",
+                    status="covered",
+                    links=[{"eid": "E3", "relation": "supports"}],
+                    norm_eid="E3",
+                    fact_links=["F2", "F3"],
+                    material_links=["M2", "M3"],
+                    match_status="satisfied",
+                    match_note="净化间试机损耗属通常业务必然发生之附带损失 (UCC § 2-715(1))；停产间接损失出卖人订约时已知悉，具备可预见性。"
+                )
+            ],
+            materials=[
+                Material(
+                    mid="M1",
+                    name="中美双语晶圆检测机台采购协议及技术规范书 Spec-Rev3",
+                    desc_zh="买卖双方签署之正本合同，包含明确选法条款、全额信用证付款凭证及技术公差保证附录。",
+                    excerpt_zh="Governing Law: This Agreement shall be governed by the laws of the State of New York and the Uniform Commercial Code. CISG is expressly excluded.",
+                    fact_ids=["F1"]
+                ),
+                Material(
+                    mid="M2",
+                    name="国家半导体计量检测中心出具之重复精度偏差第三方测试报告",
+                    desc_zh="对涉案机台连续7日72小时运转测试数据分析，结论证实机台重复偏差0.28微米超标。",
+                    excerpt_zh="测试结论：光学成像重复公差平均偏离达0.28μm，不符合合同标称之0.05μm要求。",
+                    fact_ids=["F2"]
+                ),
+                Material(
+                    mid="M3",
+                    name="2023-07-28 违约整改与索赔律师函及 FedEx 国际特快送达签收底单",
+                    desc_zh="原告委托涉外律师向加州半导体公司发出之正式质量异议函件，包含送达签收存根。",
+                    excerpt_zh="Notice of Breach: Buyer hereby notifies Seller of material breach of implied warranty of merchantability under UCC § 2-314.",
+                    fact_ids=["F3"]
+                )
+            ],
+            evidence={
+                "E1": Evidence(
+                    eid="E1",
+                    kind="norm",
+                    ref_id="UCC:§2-314",
+                    text_de="UCC § 2-314: Unless excluded or modified, a warranty that the goods shall be merchantable is implied in a contract for their sale if the seller is a merchant with respect to goods of that kind. Goods to be merchantable must be at least such as are fit for the ordinary purposes for which such goods are used.",
+                    source_url="https://www.law.cornell.edu/ucc/2/2-314",
+                    stand="UCC Official Text 2022",
+                    fetched_at="2026-10-11T12:00:00Z",
+                    grade="A"
+                ),
+                "E2": Evidence(
+                    eid="E2",
+                    kind="norm",
+                    ref_id="UCC:§2-607",
+                    text_de="UCC § 2-607(3)(a): Where a tender has been accepted, the buyer must within a reasonable time after he discovers or should have discovered any breach notify the seller of breach or be barred from any remedy.",
+                    source_url="https://www.law.cornell.edu/ucc/2/2-607",
+                    stand="UCC Official Text 2022",
+                    fetched_at="2026-10-11T12:00:00Z",
+                    grade="A"
+                ),
+                "E3": Evidence(
+                    eid="E3",
+                    kind="norm",
+                    ref_id="UCC:§2-715",
+                    text_de="UCC § 2-715: Incidental damages resulting from the seller's breach include expenses reasonably incurred in inspection, care and custody of goods rightfully rejected. Consequential damages include any loss resulting from general or particular requirements of which the seller at the time of contracting had reason to know.",
+                    source_url="https://www.law.cornell.edu/ucc/2/2-715",
+                    stand="UCC Official Text 2022",
+                    fetched_at="2026-10-11T12:00:00Z",
+                    grade="A"
+                ),
+                "E4": Evidence(
+                    eid="E4",
+                    kind="norm",
+                    ref_id="USC:28:§1782",
+                    text_de="28 U.S.C. § 1782: The district court of the district in which a person resides or is found may order him to give his testimony or to produce a document or other thing for use in a proceeding in a foreign or international tribunal.",
+                    source_url="https://www.law.cornell.edu/uscode/text/28/1782",
+                    stand="United States Code 2024",
+                    fetched_at="2026-10-11T12:00:00Z",
+                    grade="A"
+                )
+            },
+            translations={
+                "E1": "《美国统一商法典》第2-314条：若出卖人为该类货物的商人，合同默示出卖人担保标的物具备适销品质，至少须符合同类货物的通常用途标准及规格公差。",
+                "E2": "《美国统一商法典》第2-607条第3款(a)项：受领标的物后，买方必须在发现或理应发现违约后的合理时间内通知出卖人，否则丧失任何救济权利（失权抗辩）。",
+                "E3": "《美国统一商法典》第2-715条：出卖人违约时，买方有权请求赔偿合理支出的检验、保管附带损失，以及订约时出卖人知悉的产线停工可得利益间接损失。",
+                "E4": "《美国法典》第28编第1782条：外国民商事诉讼利害关系人可直接向美国联邦法院申请调取位于美国境内的当事人证言或内部技术书证。"
+            },
+            similar_cases=[
+                SimilarCaseItem(
+                    case_id="CASE:SCOTUS:Intel v. AMD:2004",
+                    eid="E4",
+                    court="SCOTUS",
+                    az="542 U.S. 241",
+                    date="2004-06-21",
+                    similarity_points=["均涉及境外诉讼当事人寻求调取美国公司境内研发证据", "均适用 28 U.S.C. § 1782 跨境取证协助准则"],
+                    difference_points=["先例涉及反垄断调查，本案为高精度设备买卖合同违约民商事审判，境外法庭接受度更高"],
+                    court_view_quote_de="Under § 1782, discovery may be ordered for use in foreign proceedings; district courts must consider whether the foreign tribunal is receptive to US federal assistance and whether the request is unduly burdensome.",
+                    court_view_zh="美国联邦最高法院确立四大自由裁量原则：只要外国法院对证据具有接受度且申请并非变相规避外国证明规则，美国法院倾向支持涉外当事人跨境调取关键研发证据。",
+                    divergence_flag="consistent"
+                ),
+                SimilarCaseItem(
+                    case_id="CASE:2ND-CIR:Filanto v. Chilewich:1992",
+                    eid="E2",
+                    court="2nd Cir.",
+                    az="789 F. Supp. 1229",
+                    date="1992-04-14",
+                    similarity_points=["均涉及跨国涉外大宗买卖合同项下检验通知期限与抗辩效力认定"],
+                    difference_points=["先例涉及异议失权与仲裁条款合意，本案重点在精密工业设备调试期对合理检验通知时间的宽延计算"],
+                    court_view_quote_de="What constitutes a reasonable time under UCC § 2-607 depends on the nature, purpose and circumstances of the transaction.",
+                    court_view_zh="第二巡回法院明确判定：UCC § 2-607 所称‘合理时间’不应机械以数日为限，必须结合标的物复杂程度、商业惯例与现场调试实际环境综合权衡认定。",
+                    divergence_flag="consistent"
+                )
+            ],
+            counsel_questions=[
+                "请向美国特许诉讼律师咨询：依照第二巡回法院及纽约州商业法庭判例，针对需要净化间复杂连线调试的高精晶圆机台，试运行第23天发出违约通知是否落在 UCC § 2-607(3)(a) '合理时间' 之司法认可区间？",
+                "若美方主张其发货单背面印有排除间接损失（Disclaimer of Consequential Damages）条款，依据 UCC § 2-207 格式条款之战规则，在双方均为商人且原告要约已明示限制的情况下能否认定该条款不并入合同？",
+                "本案能否依据 28 U.S.C. § 1782 立即向美国加利福尼亚北区联邦地区法院提起单方发现动议（Ex Parte Application for Discovery），强制调取美方机台设计缺陷与出厂校准不达标的内部邮件？"
+            ],
+            findings=[
+                Finding(
+                    qid="Q1",
+                    statements=[
+                        Statement(
+                            sid="S1",
+                            text_zh="依据《美国统一商法典》(UCC) § 2-314，出卖人作为专业半导体设备商人，标的物重复偏差超标0.28微米构成物之瑕疵，违反默示适销性担保。",
+                            type="quote",
+                            evidence_ids=["E1"],
+                            part="A",
+                            quote_de="Unless excluded or modified, a warranty that the goods shall be merchantable is implied in a contract for their sale...",
+                            grade="A",
+                            status="ok"
+                        ),
+                        Statement(
+                            sid="S2",
+                            text_zh="依据 UCC § 2-607(3)(a) 及第二巡回法院判例，买受人须在合理期限内通知出卖人，高精复杂设备需现场带料试机，23天发出通知具备合理抗辩理由。",
+                            type="inference",
+                            evidence_ids=["E2"],
+                            part="B",
+                            fact_ids=["F2", "F3"],
+                            material_ids=["M2", "M3"],
+                            element_id="e3",
+                            status="ok"
+                        ),
+                        Statement(
+                            sid="S3",
+                            text_zh="依据 28 U.S.C. § 1782 及美国联邦最高法院 Intel v. AMD 先例，原告作为中国诉讼当事人，有权向美国联邦法院申请调取美方内部设计缺陷书证。",
+                            type="quote",
+                            evidence_ids=["E4"],
+                            part="A",
+                            quote_de="The district court may order a person to give testimony or produce documents for use in a foreign proceeding...",
+                            grade="A",
+                            status="ok"
+                        )
+                    ],
+                    gaps=[]
+                )
+            ],
+            checks=[
+                CheckItem(code="V1", status="pass", reason="所有引用规范均在官方UCC及USC法条库中经检验存在"),
+                CheckItem(code="V2", status="pass", reason="所有原文引用陈述均有效锚定已检验的英文及中文法源证据"),
+                CheckItem(code="V3", status="pass", reason="已完整绑定不可变法条快照指纹: 20261010-gii-v0.7"),
+                CheckItem(code="V4", status="pass", reason="时点核验判定为【yellow】态：适用现行UCC Article 2官方文本"),
+                CheckItem(code="V5", status="pass", reason="CISG在合同中明文排除，准据法进入美国商事法通道"),
+                CheckItem(code="V6", status="pass", reason="已翻译全部核心美国商法规范文本"),
+                CheckItem(code="V7", status="pass", reason="事实分析陈述均精准回溯至 F# 事实编号"),
+                CheckItem(code="V8", status="pass", reason="严格采用条件式审理表述，未出现绝对胜诉结果断言"),
+                CheckItem(code="V9", status="pass", reason="输出成果已完整包含 A 包与 B 包"),
+                CheckItem(code="V10", status="pass", reason="要件覆盖统计：covered=4, partial=0, missing=0"),
+                CheckItem(code="V11", status="pass", reason="上下文 Token 安全受控")
+            ],
+            dashboard=DashboardMetrics(
+                exact_quotes_ratio=(2, 3),
+                norms_cases_exist_all=True,
+                unresolved_refs_count=0,
+                supported_statements_ratio=(3, 3),
+                elements_coverage={"covered": 4, "partial": 0, "missing": 0},
+                elements_match={"satisfied": 3, "partial": 1, "missing": 0, "disputed": 0},
+                facts_traceable_ratio=(1, 1),
+                entity_checks_pass_ratio=(1, 1),
+                comparative_law_flags_count=0,
+                grades_distribution={"A": 4, "B": 0, "C": 0, "D": 0},
+                timepoint_level="yellow",
+                cisg_triggered=False,
+                snapshot_id="20261010-gii-v0.7",
+                report_version=1,
+                content_hash="sha256:c004ready_us",
+                mode="full"
+            ),
+            status="completed",
+            created_at="2026-10-11T10:00:00Z",
+            updated_at="2026-10-11T10:45:00Z",
+            current_node="s9_export"
+        )
+        c4.strategic_assessment = build_strategic_assessment(c4)
+        db.save_case(c4, title="中美跨国半导体晶圆检测设备买卖合同违约与 UCC 默示适销性担保争议查明案")
+
+    # 对数据库中任何历史案例，若缺少 strategic_assessment 则自动回填
+    for summary in db.list_cases():
+        c_state = db.get_case(summary.case_id)
+        if c_state and c_state.strategic_assessment is None:
+            c_state.strategic_assessment = build_strategic_assessment(c_state)
+            db.save_case(c_state)
+
 
 
 @asynccontextmanager

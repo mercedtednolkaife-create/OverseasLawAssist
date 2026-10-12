@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { UserRole, CaseState, CaseSummary, Evidence } from '../types/lawAgent';
 import { lawAgentApi } from '../api/lawAgentApi';
 
@@ -35,7 +35,7 @@ interface AppContextType {
   toasts: Toast[];
   showToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
   removeToast: (id: string) => void;
-  loadCase: (caseId: string) => Promise<boolean>;
+  loadCase: (caseId: string, force?: boolean) => Promise<boolean>;
   refreshCurrentCase: () => Promise<void>;
   // 右侧抽屉 / 对照窗状态
   selectedEvidenceEid: string | null;
@@ -62,6 +62,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // 保持 currentCase 最新引用的 Ref，供 loadCase 闭包读取，避免 useCallback 依赖 currentCase 引发死循环重渲染
+  const currentCaseRef = useRef<CaseState | null>(null);
+  currentCaseRef.current = currentCase;
 
   // 权威法源抽屉 / 对照窗
   const [selectedEvidenceEid, setSelectedEvidenceEid] = useState<string | null>('E1');
@@ -116,12 +120,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loadCase = useCallback(
-    async (caseId: string): Promise<boolean> => {
+    async (caseId: string, force?: boolean): Promise<boolean> => {
+      if (!force && currentCaseRef.current && currentCaseRef.current.case_id !== caseId && currentCaseRef.current.status === 'running') {
+        showToast('当前案件正在执行 Multi-Agent 流式协同研判，请等待完成后再切换', 'warning');
+        return false;
+      }
       setLoading(true);
       setError(null);
+      // 仅在切换到不同案件时才重置 currentCase，避免刷新同一案件时产生白屏闪烁
+      if (currentCaseRef.current && currentCaseRef.current.case_id !== caseId) {
+        setCurrentCase(null);
+      }
+      setCurrentCaseId(caseId);
       try {
         const data = await lawAgentApi.getCase(caseId);
-        setCurrentCaseId(caseId);
         setCurrentCase(data);
         return true;
       } catch (err: any) {
@@ -136,9 +148,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const refreshCurrentCase = useCallback(async () => {
-    if (!currentCaseId) return;
+    const targetCaseId = currentCaseRef.current?.case_id || currentCaseId;
+    if (!targetCaseId) return;
     try {
-      const data = await lawAgentApi.getCase(currentCaseId);
+      const data = await lawAgentApi.getCase(targetCaseId);
       setCurrentCase(data);
       const summaries = await lawAgentApi.getCases();
       if (Array.isArray(summaries)) {
@@ -157,8 +170,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }).catch(() => {});
   }, []);
 
+  // 初次挂载或外部改变 currentCaseId 且尚未加载该案件时执行
   useEffect(() => {
-    if (currentCaseId) {
+    if (currentCaseId && currentCaseRef.current?.case_id !== currentCaseId) {
       loadCase(currentCaseId);
     }
   }, [currentCaseId, loadCase]);

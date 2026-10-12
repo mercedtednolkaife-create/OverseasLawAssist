@@ -31,9 +31,13 @@ class DenseVectorEngine:
 
     def _ensure_model(self):
         if self.model is None:
-            self.model = SentenceTransformer(self.model_name, device=self.device)
-            # 8GB VRAM 优化：限制单块最大序列长度为 512 tokens，避免 8192 超长注意力矩阵爆显存
+            try:
+                self.model = SentenceTransformer(self.model_name, device=self.device, local_files_only=True)
+            except Exception:
+                # 若本地未缓存模型文件，避免网络阻塞
+                raise RuntimeError(f"Dense model {self.model_name} is not available locally")
             self.model.max_seq_length = 512
+
 
     def build_from_chunks(self, chunks: List[Dict[str, Any]], batch_size: int = 12):
         """批量编码分块文本并建立 FAISS 索引"""

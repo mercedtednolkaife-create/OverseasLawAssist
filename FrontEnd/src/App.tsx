@@ -59,7 +59,10 @@ const MainLayout: React.FC = () => {
 
       {/* 右侧主工作区 */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        <TopBar />
+        <TopBar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
 
         {/* 工作区画布主体 (支持分栏与抽屉并排工作台) */}
         <div className="flex-1 flex min-w-0 overflow-hidden relative">
@@ -76,7 +79,7 @@ const MainLayout: React.FC = () => {
                     涉外法查明Agent
                   </span>
                   <span>·</span>
-                  <span className="font-mono text-[11px]">gesetze-im-internet.de / rechtsprechung-im-internet.de</span>
+                  <span className="font-mono text-[11px]">gesetze-im-internet.de / courtlistener.com / ali.org</span>
                 </div>
               </div>
             </footer>

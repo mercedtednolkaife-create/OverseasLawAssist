@@ -42,29 +42,92 @@ def search_norms_and_cases(
     query = q.strip()
     items: List[NormOrCaseItem] = []
 
-    # 1. 当问句为空时，提供核心高频条文与指导判例默认列表
+    # 1. 当问句为空时，提供核心高频条文与指导判例列表
     if not query:
-        core_norms = ["BGB:§433", "BGB:§434", "BGB:§437", "BGB:§439", "BGB:§323", "BGB:§280", "BGB:§286", "HGB:§377"]
-        for cid in core_norms:
-            norm = snapshot_mgr.norm_lookup(cid)
-            if norm:
-                if law and norm.get("law") != law:
-                    continue
-                if kind == "case":
-                    continue
-                items.append(NormOrCaseItem(
-                    id=norm["norm_id"],
-                    kind="norm",
-                    law=norm["law"],
-                    enbez=norm["enbez"],
-                    title=norm["title"] or f"{norm['law']} {norm['enbez']}",
-                    heading_path=norm.get("heading_path"),
-                    text_de=norm["text_de"][:1500],
-                    text_zh_machine=f"【释义】针对 {norm['norm_id']} 之法定权利义务及构成要件",
-                    stand=norm.get("stand"),
-                    has_pending_amend=bool(norm.get("has_pending_amend")),
-                    source_url=norm["source_url"]
-                ))
+        conn = snapshot_mgr.get_connection()
+        if law and conn:
+            # 用户指定了特定法典 (如 UCC, DGCL, USC, BGB, HGB, Rome_I 等)
+            cursor = conn.cursor()
+            if kind != "case":
+                cursor.execute("SELECT norm_id FROM norms WHERE law = ? LIMIT 25", (law,))
+                for row in cursor.fetchall():
+                    norm = snapshot_mgr.norm_lookup(row[0])
+                    if norm:
+                        items.append(NormOrCaseItem(
+                            id=norm["norm_id"],
+                            kind="norm",
+                            law=norm["law"],
+                            enbez=norm["enbez"],
+                            title=norm["title"] or f"{norm['law']} {norm['enbez']}",
+                            heading_path=norm.get("heading_path"),
+                            text_de=norm["text_de"][:1500],
+                            text_zh_machine=f"【释义】针对 {norm['norm_id']} 之法定权利义务及构成要件",
+                            stand=norm.get("stand"),
+                            has_pending_amend=bool(norm.get("has_pending_amend")),
+                            source_url=norm["source_url"]
+                        ))
+            if kind != "norm":
+                cursor.execute("SELECT case_id FROM cases WHERE court LIKE ? OR case_id LIKE ? LIMIT 10", (f"%{law}%", f"%{law}%"))
+                for row in cursor.fetchall():
+                    case_data = snapshot_mgr.case_lookup(row[0])
+                    if case_data:
+                        items.append(NormOrCaseItem(
+                            id=case_data["case_id"],
+                            kind="case",
+                            court=case_data["court"],
+                            az=case_data["az"],
+                            decided=case_data["decided"],
+                            title=f"{case_data['court']} {case_data['az']} ({case_data['decided']})",
+                            text_de=(case_data.get("leitsatz") or case_data.get("gruende") or "")[:1500],
+                            text_zh_machine=f"【裁判要旨】{case_data['court']} 司法裁判要旨",
+                            source_url=case_data["source_url"]
+                        ))
+            return items
+
+        # 未指定特定法典时，默认返回跨法域（美商法、德联邦法、欧盟冲突法）核心条文与代表性先例
+        core_norms = [
+            "BGB:§433", "BGB:§434", "BGB:§437", "HGB:§377",
+            "UCC:§2-106", "UCC:§2-207", "UCC:§2-313", "UCC:§2-314", "UCC:§2-601", "UCC:§2-607", "UCC:§2-714",
+            "DGCL:§141", "USC:28§1782", "Rome_I:Art.3", "Rome_I:Art.4"
+        ]
+        if kind != "case":
+            for cid in core_norms:
+                norm = snapshot_mgr.norm_lookup(cid)
+                if norm:
+                    items.append(NormOrCaseItem(
+                        id=norm["norm_id"],
+                        kind="norm",
+                        law=norm["law"],
+                        enbez=norm["enbez"],
+                        title=norm["title"] or f"{norm['law']} {norm['enbez']}",
+                        heading_path=norm.get("heading_path"),
+                        text_de=norm["text_de"][:1500],
+                        text_zh_machine=f"【释义】针对 {norm['norm_id']} 之法定权利义务及构成要件",
+                        stand=norm.get("stand"),
+                        has_pending_amend=bool(norm.get("has_pending_amend")),
+                        source_url=norm["source_url"]
+                    ))
+
+        if kind != "norm":
+            core_cases = [
+                "CASE:BGH:VIII ZR 12/20:2021-05-12",
+                "CASE:SCOTUS:Intel v. AMD:2004",
+                "CASE:2ND-CIR:Filanto v. Chilewich:1992"
+            ]
+            for case_id in core_cases:
+                case_data = snapshot_mgr.case_lookup(case_id)
+                if case_data:
+                    items.append(NormOrCaseItem(
+                        id=case_data["case_id"],
+                        kind="case",
+                        court=case_data["court"],
+                        az=case_data["az"],
+                        decided=case_data["decided"],
+                        title=f"{case_data['court']} {case_data['az']} ({case_data['decided']})",
+                        text_de=(case_data.get("leitsatz") or case_data.get("gruende") or "")[:1500],
+                        text_zh_machine=f"【裁判要旨】{case_data['court']} 司法裁判要旨",
+                        source_url=case_data["source_url"]
+                    ))
         return items
 
     # 2. 混合检索召回

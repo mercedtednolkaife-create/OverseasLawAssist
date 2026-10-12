@@ -70,6 +70,35 @@ export const ReportReviewView: React.FC = () => {
     );
   }
 
+  if (currentCase.status === 'running') {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center mx-auto">
+          <RotateCcw className="w-6 h-6 animate-spin" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-zinc-900">
+            双语查明报告正在编制与质检中...
+          </h3>
+          <p className="text-xs text-zinc-500 leading-relaxed max-w-md mx-auto">
+            案件【{currentCase.case_id}】正在执行协同流水线，双语法律陈述与规范比对将在起草 Agent 与质检裁判完成后就绪呈现。
+          </p>
+        </div>
+        <button
+          onClick={() => setCurrentView('workspace')}
+          className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-2xs"
+        >
+          前往 Agent 工作台查看实时进度
+        </button>
+      </div>
+    );
+  }
+
+  const isUS =
+    currentCase.meta?.jurisdiction === 'us_commercial' ||
+    Boolean(currentCase.meta?.choice_of_law?.includes('美国')) ||
+    Boolean(currentCase.meta?.choice_of_law?.includes('UCC'));
+
   const handleSelectStatement = (st: Statement) => {
     if (st.evidence_ids && st.evidence_ids.length > 0) {
       setSelectedEid(st.evidence_ids[0]);
@@ -122,7 +151,7 @@ export const ReportReviewView: React.FC = () => {
     try {
       const reportVer = currentCase.dashboard?.report_version || 1;
       const contentHash = currentCase.dashboard?.content_hash || '';
-      const filename = `German_Law_Report_${currentCase.case_id}_v${reportVer}.${format}`;
+      const filename = `${isUS ? 'US_Commercial_Law_Report' : 'German_Law_Report'}_${currentCase.case_id}_v${reportVer}.${format}`;
 
       if (format === 'docx') {
         const blob = await lawAgentApi.exportDocx(currentCase.case_id);
@@ -134,10 +163,13 @@ export const ReportReviewView: React.FC = () => {
         URL.revokeObjectURL(url);
         showToast(`已生成并下载最高院标准 Word 报告 ${filename}`, 'success');
       } else {
+        const reportTitle = isUS
+          ? '# 美国商事与联邦法域外法查明材料包 (解释二规范报告)'
+          : '# 德意志联邦法域外法查明材料包 (解释二规范报告)';
         const content =
           format === 'json'
             ? JSON.stringify(currentCase, null, 2)
-            : `# 德意志联邦法域外法查明材料包 (解释二规范报告)\n\n案件编号: ${currentCase.case_id}\n快照版本: ${currentCase.snapshot_id}\n生成时间: ${currentCase.updated_at}\n\n## 一、法源具体规定与德汉对照\n${Object.values(currentCase.evidence || {})
+            : `${reportTitle}\n\n案件编号: ${currentCase.case_id}\n快照版本: ${currentCase.snapshot_id}\n生成时间: ${currentCase.updated_at}\n\n## 一、法源具体规定与双语对照\n${Object.values(currentCase.evidence || {})
                 .map((e) => `### ${e.ref_id}\n原文: ${e.text_de}\n译文: ${currentCase.translations?.[e.eid] || ''}\n来源: ${e.source_url}\n`)
                 .join('\n')}\n\n## 二、核心查明陈述\n${(currentCase.findings || [])
                 .flatMap((f) => f.statements || [])
@@ -180,7 +212,7 @@ export const ReportReviewView: React.FC = () => {
                   ? currentCase.meta.parties.join(' vs ')
                   : null) ||
                   currentCase.meta?.contract_type ||
-                  '涉德跨境商事合同与履行瑕疵争议'}
+                  (isUS ? '涉美跨境商事买卖与担保违约争议' : '涉德跨境商事合同与履行瑕疵争议')}
               </h1>
               <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
                 双语报告与审阅 (Review Canvas)
@@ -188,9 +220,9 @@ export const ReportReviewView: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-              <span>当事人: {currentCase.meta?.parties?.join(' vs ') || '中国卖方 vs 德国买方'}</span>
+              <span>当事人: {currentCase.meta?.parties?.join(' vs ') || (isUS ? '中国买方 vs 美国加州卖方' : '中国卖方 vs 德国买方')}</span>
               <span>·</span>
-              <span>准据法: {currentCase.meta?.choice_of_law || '德国实体法'}</span>
+              <span>准据法: {currentCase.meta?.choice_of_law || (isUS ? '美国商事法 (UCC & 联邦法)' : '德国实体法')}</span>
               <span>·</span>
               <span className="font-mono text-[11px]">快照库: {currentCase.snapshot_id}</span>
               <span>·</span>
@@ -235,7 +267,7 @@ export const ReportReviewView: React.FC = () => {
             <Clock className="w-4 h-4 text-zinc-600 shrink-0" />
             <span>
               <strong>S3 争点需求单中断：</strong>
-              争点拆解与待查明问题已初步就绪，请人工核验争议事实标记及德语检索式。
+              争点拆解与待查明问题已初步就绪，请人工核验争议事实标记及{isUS ? '英文' : '德语'}检索式。
             </span>
           </div>
           <button
@@ -342,7 +374,11 @@ export const ReportReviewView: React.FC = () => {
               type="text"
               value={followupText}
               onChange={(e) => setFollowupText(e.target.value)}
-              placeholder="例如：若买方要求减少价款 (Minderung)，德国法计算公式及比例如何确定？"
+              placeholder={
+                isUS
+                  ? '例如：依据 UCC § 2-607(3)(a)，买方检验通知合理期间如何判定？'
+                  : '例如：若买方要求减少价款 (Minderung)，德国法计算公式及比例如何确定？'
+              }
               className="flex-1 px-3 py-1.5 text-xs border border-zinc-200 rounded-lg bg-zinc-50/50 focus:bg-white focus:outline-none focus:border-zinc-400"
             />
             <button
@@ -364,7 +400,7 @@ export const ReportReviewView: React.FC = () => {
               <span className="font-semibold text-zinc-900">
                 中文查明陈述与认定依据 ({allStatements.length}条)
               </span>
-              <span className="text-[11px] text-zinc-400">点击语句即可于右侧联动定位德语出处</span>
+              <span className="text-[11px] text-zinc-400">点击语句即可于右侧联动定位外文法源出处</span>
             </div>
 
             <div className="space-y-3">
@@ -591,7 +627,7 @@ export const ReportReviewView: React.FC = () => {
           {/* 右侧：德语官方原文与核验译文 (5列) */}
           <div className="lg:col-span-5 sticky top-16 space-y-3">
             <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
-              <span className="font-semibold text-zinc-900">德语官方原文与出处核验</span>
+              <span className="font-semibold text-zinc-900">{isUS ? '官方外文原文与出处核验' : '德语官方原文与出处核验'}</span>
               <span className="font-mono text-[11px]">
                 {selectedEvidence ? `[${selectedEvidence.eid}] ${selectedEvidence.ref_id}` : ''}
               </span>
@@ -609,7 +645,13 @@ export const ReportReviewView: React.FC = () => {
                   </div>
                   <div className="text-[11px] text-zinc-500 flex items-center justify-between">
                     <span>
-                      {selectedEvidence.kind === 'norm' ? '德意志联邦成文法规范' : '联邦最高法院权威判决'}
+                      {selectedEvidence.kind === 'norm'
+                        ? isUS
+                          ? '美国商事/联邦成文法规范'
+                          : '德意志联邦成文法规范'
+                        : isUS
+                        ? '美国联邦/州法院先例判决'
+                        : '联邦最高法院权威判决'}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -633,10 +675,10 @@ export const ReportReviewView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 德语官方原文代码块 */}
+                {/* 官方外文原文代码块 */}
                 <div>
                   <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">
-                    Amtlicher Wortlaut (德语官方正文)
+                    {isUS ? 'Official Text (英文官方正文)' : 'Amtlicher Wortlaut (德语官方正文)'}
                   </label>
                   <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 text-xs text-zinc-900 font-mono leading-relaxed whitespace-pre-wrap">
                     {selectedEvidence.text_de}
@@ -674,7 +716,7 @@ export const ReportReviewView: React.FC = () => {
               </div>
             ) : (
               <div className="p-12 text-center bg-white rounded-lg border border-zinc-200 text-xs text-zinc-400">
-                请在左侧点击任一条查明陈述以展开德文出处对照
+                请在左侧点击任一条查明陈述以展开{isUS ? '外文法源' : '德文'}出处对照
               </div>
             )}
           </div>
@@ -776,7 +818,7 @@ export const ReportReviewView: React.FC = () => {
               检索轨迹与候选舍弃原因回溯 (可解释性审计)
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              记录 Researcher 节点在德意志联邦法律库中混合检索 (BM25 + BGE-M3 + RRF 重排) 的每步执行轨迹
+              记录 Researcher 节点在{isUS ? '美国商事及涉外法律库' : '德意志联邦法律库'}中混合检索 (BM25 + BGE-M3 + RRF 重排) 的每步执行轨迹
             </p>
           </div>
 

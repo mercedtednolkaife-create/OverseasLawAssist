@@ -47,7 +47,7 @@ export const NormSearchEngineView: React.FC = () => {
             域外法律法规与判例检索库
           </h1>
           <p className="text-xs text-zinc-500 mt-0.5">
-            权威法源直连 gesetze-im-internet.de 联邦法规与 rechtsprechung-im-internet.de 最高院判例，支持德汉跨语言检索
+            权威法源直连美国统一商法典 (UCC/LII)、德国联邦法规 (GII)、最高院判例库与欧盟跨国公约，支持跨法域双语多维检索
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export const NormSearchEngineView: React.FC = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="输入条文如 'BGB § 437'，或输入中德关键词如 '物之瑕疵'、'Rücktritt'、'催告'..."
+              placeholder="输入条文如 'UCC § 2-314' 或 'BGB § 437'，或输入中英德关键词如 '适销性担保'、'物之瑕疵'、'Merchantability'..."
               className="w-full pl-8.5 pr-3 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-zinc-400 bg-zinc-50/50 focus:bg-white"
             />
           </div>
@@ -70,11 +70,22 @@ export const NormSearchEngineView: React.FC = () => {
               onChange={(e) => setSelectedLaw(e.target.value)}
               className="px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-700 font-medium"
             >
-              <option value="all">全部法典 (All Laws)</option>
-              <option value="BGB">BGB · 德国民法典</option>
-              <option value="HGB">HGB · 德国商法典</option>
-              <option value="ZPO">ZPO · 民事诉讼法 (含§293)</option>
-              <option value="CISG">CISG · 国际货物销售公约</option>
+              <option value="all">全部法典 (All Laws & Codes)</option>
+              <optgroup label="🇺🇸 美国法域 (US Law)">
+                <option value="UCC">UCC · 统一商法典 (买卖篇)</option>
+                <option value="DGCL">DGCL · 特拉华州普通公司法</option>
+                <option value="USC">28 U.S.C. · 联邦诉讼取证法典</option>
+              </optgroup>
+              <optgroup label="🇩🇪 德国法域 (German Law)">
+                <option value="BGB">BGB · 德国民法典</option>
+                <option value="HGB">HGB · 德国商法典</option>
+                <option value="GmbHG">GmbHG · 有限责任公司法</option>
+                <option value="ZPO">ZPO · 民事诉讼法 (含§293)</option>
+              </optgroup>
+              <optgroup label="🌐 国际与区域公约 (International)">
+                <option value="CISG">CISG · 联合国国际货物销售公约</option>
+                <option value="Rome_I">Rome I · 欧盟罗马条例 I (冲突法)</option>
+              </optgroup>
             </select>
 
             <select
@@ -83,8 +94,8 @@ export const NormSearchEngineView: React.FC = () => {
               className="px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-700 font-medium"
             >
               <option value="all">全部类型 (法条与判例)</option>
-              <option value="norm">成文法规范 (Normen)</option>
-              <option value="case">联邦判例 (Rechtsprechung)</option>
+              <option value="norm">成文法规范 (Normen / Statutes)</option>
+              <option value="case">司法判例 (Cases / Precedents)</option>
             </select>
 
             <button
@@ -107,7 +118,7 @@ export const NormSearchEngineView: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-xs text-zinc-400">正在检索德意志联邦法源...</div>
+            <div className="p-12 text-center text-xs text-zinc-400">正在检索跨法域域外法源...</div>
           ) : items.length === 0 ? (
             <div className="p-12 text-center text-xs text-zinc-400">未检索到匹配的条文或判例</div>
           ) : (
@@ -180,10 +191,12 @@ export const NormSearchEngineView: React.FC = () => {
                 )}
               </div>
 
-              {/* 德语官方原文 */}
+              {/* 官方外文原文 */}
               <div className="space-y-1">
                 <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                  德语官方合并文本 (Amtlicher Text)
+                  {selectedItem.id.startsWith('UCC') || selectedItem.id.startsWith('DGCL') || selectedItem.id.startsWith('USC') || selectedItem.id.startsWith('CASE:SCOTUS') || selectedItem.id.startsWith('CASE:2ND')
+                    ? '英文官方条文与判决原文 (Official Legal Text)'
+                    : '德语/外文官方合并文本 (Amtlicher Text / Official Text)'}
                 </label>
                 <div className="p-3.5 bg-zinc-50 rounded-lg border border-zinc-200 text-xs font-mono text-zinc-900 leading-relaxed whitespace-pre-wrap">
                   {selectedItem.text_de}
@@ -194,9 +207,9 @@ export const NormSearchEngineView: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                    中文参考译文 (非官方效力)
+                    中文参考释义与要旨 (对齐中国涉外审判规范)
                   </label>
-                  <span className="text-[10px] text-zinc-400">标准术语对齐</span>
+                  <span className="text-[10px] text-zinc-400">标准法学术语对齐</span>
                 </div>
                 <div className="p-3.5 bg-zinc-50/70 rounded-lg border border-zinc-200 text-xs text-zinc-800 leading-relaxed whitespace-pre-wrap">
                   {selectedItem.text_zh_machine}
@@ -207,10 +220,15 @@ export const NormSearchEngineView: React.FC = () => {
               <div className="p-3 bg-zinc-100/70 rounded-lg text-[11px] text-zinc-600 font-mono space-y-1">
                 <div>
                   <strong>公布与修订批注 (Stand)：</strong>{' '}
-                  {selectedItem.stand || '官方最新现行版'}
+                  {selectedItem.stand || '官方最新现行生效版本'}
                 </div>
                 <div>
-                  <strong>数据来源：</strong> gesetze-im-internet.de 授权公开再利用
+                  <strong>数据来源：</strong>{' '}
+                  {selectedItem.id.startsWith('UCC') || selectedItem.id.startsWith('DGCL') || selectedItem.id.startsWith('USC')
+                    ? '康奈尔大学法律信息所 (LII) / 统一法律委员会 (ULC) 权威收录'
+                    : selectedItem.id.startsWith('Rome_I')
+                    ? '欧洲联盟官方公报 (EUR-Lex) 官方收录'
+                    : '德国联邦司法部 (GII / RII) 授权公开数据库'}
                 </div>
               </div>
             </>

@@ -79,7 +79,7 @@ def run_critic_checks(state: CaseState) -> Tuple[List[CheckItem], DashboardMetri
     checks.append(CheckItem(
         code="V2",
         status="pass" if v2_pass else "fail",
-        reason="所有原文引用陈述均有效锚定已检验的德文证据材料" if v2_pass else "; ".join(v2_reasons)
+        reason="所有原文引用陈述均有效锚定已检验的官方外文证据材料" if v2_pass else "; ".join(v2_reasons)
     ))
 
     # -------------------------------------------------------------
@@ -117,7 +117,7 @@ def run_critic_checks(state: CaseState) -> Tuple[List[CheckItem], DashboardMetri
     ))
 
     # -------------------------------------------------------------
-    # V6: 翻译与德语原文完整性 (Translations)
+    # V6: 翻译与原文完整性 (Translations)
     # -------------------------------------------------------------
     norm_eids = [eid for eid, ev in state.evidence.items() if ev.kind == "norm"]
     translated_count = sum(1 for eid in norm_eids if eid in state.translations and state.translations[eid])
@@ -125,7 +125,7 @@ def run_critic_checks(state: CaseState) -> Tuple[List[CheckItem], DashboardMetri
     checks.append(CheckItem(
         code="V6",
         status="pass" if v6_pass else "fail",
-        reason=f"已翻译 {translated_count}/{len(norm_eids)} 篇核心规范文本，德文原始条款与专业术语对齐保存" if v6_pass else "核心规范文本缺少中文释义翻译"
+        reason=f"已翻译 {translated_count}/{len(norm_eids)} 篇核心规范文本，官方原始条款与专业术语对齐保存" if v6_pass else "核心规范文本缺少中文释义翻译"
     ))
 
     # -------------------------------------------------------------

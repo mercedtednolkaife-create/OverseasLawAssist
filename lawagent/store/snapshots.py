@@ -89,38 +89,67 @@ class SnapshotManager:
 
     def norm_lookup(self, law_or_id: str, enbez: Optional[str] = None, snapshot_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """精确按条号检索法条：
-        支持 norm_lookup("BGB:§433") 或 norm_lookup("BGB", "§ 433") 或 norm_lookup("BGB", "433")
+        支持 norm_lookup("BGB:§433")、norm_lookup("UCC:§2-314")、norm_lookup("USC:28:§1782")、norm_lookup("Rome_I:Art.3")
         """
         conn = self.get_connection(snapshot_id)
         if not conn:
             return None
 
-        if enbez is None and ":" in law_or_id:
-            parts = law_or_id.split(":", 1)
+        clean_input = law_or_id.strip()
+        cur = conn.cursor()
+
+        # 0. 先尝试全字完全匹配 norm_id
+        cur.execute(
+            """SELECT norm_id, law, enbez, title, heading_path, text_de, structure, stand, has_pending_amend, source_url, snapshot_id, footnotes
+               FROM norms
+               WHERE norm_id = ? OR norm_id = ?
+               LIMIT 1""",
+            (clean_input, clean_input.replace(" ", ""))
+        )
+        row = cur.fetchone()
+        if row:
+            return dict(row)
+
+        if enbez is None and ":" in clean_input:
+            parts = clean_input.split(":", 1)
             law, enbez_str = parts[0].strip(), parts[1].strip()
         else:
-            law = law_or_id.strip()
+            law = clean_input
             enbez_str = enbez.strip() if enbez else ""
 
-        # 标准化 enbez (确保带 §)
+        # 标准化 enbez
         clean_enbez = enbez_str.replace(" ", "")
-        if not clean_enbez.startswith("§") and not clean_enbez.startswith("Art"):
+        if not clean_enbez.startswith("§") and not clean_enbez.startswith("Art") and not clean_enbez.startswith("Section"):
             clean_enbez = f"§{clean_enbez}"
         spaced_enbez = clean_enbez.replace("§", "§ ")
 
         norm_id = f"{law}:{clean_enbez}".replace(" ", "")
 
-        cur = conn.cursor()
         cur.execute(
-            """SELECT norm_id, law, enbez, title, heading_path, text_de, structure, stand, has_pending_amend, source_url, snapshot_id
+            """SELECT norm_id, law, enbez, title, heading_path, text_de, structure, stand, has_pending_amend, source_url, snapshot_id, footnotes
                FROM norms
                WHERE norm_id = ?
+                  OR norm_id = ?
                   OR (law = ? AND (enbez = ? OR REPLACE(enbez, ' ', '') = ?))
                LIMIT 1""",
-            (norm_id, law, spaced_enbez, clean_enbez)
+            (norm_id, clean_input, law, spaced_enbez, clean_enbez)
         )
         row = cur.fetchone()
         return dict(row) if row else None
+
+    def get_kommentar(self, norm_id: str) -> Optional[Dict[str, Any]]:
+        """按条文编号获取权威法典评注精要要旨 (Kommentar Leitsatz)"""
+        clean_id = norm_id.replace("NORM:", "").strip()
+        kommentar_file = "kb/de_federal/kommentare.json"
+        if os.path.exists(kommentar_file):
+            try:
+                import json
+                with open(kommentar_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data.get(clean_id)
+            except Exception:
+                pass
+        return None
 
     def case_lookup(self, case_id: str, snapshot_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """按 case_id 或 az 案号检索判例全文与元数据"""

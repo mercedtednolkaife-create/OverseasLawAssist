@@ -59,10 +59,27 @@ export const LawModal: React.FC = () => {
     );
   }
 
+  const getJurisdictionLabel = (refId: string, kind: string) => {
+    if (refId.startsWith('UCC:')) return '美国统一商法典 (U.S. Uniform Commercial Code)';
+    if (refId.startsWith('DGCL:')) return '特拉华州通用公司法 (Delaware General Corporation Law)';
+    if (refId.startsWith('USC:')) return '美国法典联邦成文法 (United States Code)';
+    if (refId.startsWith('Rome_I:')) return '欧盟《罗马条例 I》(Rome I Regulation 合同准据法)';
+    if (refId.includes('SCOTUS') || refId.includes('CIR') || refId.includes('DEL-CH')) return '美国司法裁判里程碑先例';
+    if (kind === 'norm') return '德意志联邦法典成文法条文 (Bundesrecht)';
+    return '德意志联邦最高法院/州高等法院裁判';
+  };
+
+  const getLanguageLabel = (refId: string) => {
+    if (refId.startsWith('UCC:') || refId.startsWith('DGCL:') || refId.startsWith('USC:') || refId.includes('SCOTUS') || refId.includes('CIR')) {
+      return '英文官方逐字规范原文 (Official Statutory Text)';
+    }
+    return '德语官方逐字规范原文 (Verbindlicher Gesetzestext)';
+  };
+
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    showToast('德语官方原文已复制到剪贴板', 'success');
+    showToast('官方规范原文已复制到剪贴板', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -127,7 +144,7 @@ export const LawModal: React.FC = () => {
                 </span>
               </div>
               <p className="text-[11px] text-zinc-500 font-mono truncate mt-0.5">
-                {evidence.kind === 'norm' ? '德意志联邦法典成文法条文' : '联邦最高法院判例裁判'}
+                {getJurisdictionLabel(evidence.ref_id, evidence.kind)}
                 {evidence.stand && ` · 现行效力版本: ${evidence.stand}`}
               </p>
             </div>
@@ -203,7 +220,7 @@ export const LawModal: React.FC = () => {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-zinc-900 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-blue-600" />
-                    德语官方逐字规范原文 (Verbindlicher Gesetzestext)
+                    {getLanguageLabel(evidence.ref_id)}
                   </span>
                   <button
                     type="button"

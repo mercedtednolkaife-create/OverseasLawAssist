@@ -125,11 +125,16 @@ async def evaluate_sufficiency_llm(
 请根据上述判定标准，评估每个要件的覆盖情况并输出 JSON。"""
 
     try:
-        res = await client.chat_json(
-            task="reasoning",
-            system_prompt=SUFFICIENCY_SYSTEM_PROMPT,
-            user_prompt=prompt,
-            temperature=0.0
+        import asyncio
+        res = await asyncio.wait_for(
+            client.chat_json(
+                task="reasoning",
+                system_prompt=SUFFICIENCY_SYSTEM_PROMPT,
+                user_prompt=prompt,
+                temperature=0.0,
+                retries=0
+            ),
+            timeout=16.0
         )
         items = res.get("elements", [])
         item_map = {it["element_id"]: it for it in items if "element_id" in it}

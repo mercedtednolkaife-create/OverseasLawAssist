@@ -43,12 +43,17 @@ class LLMClient:
             self._clients[pname] = OpenAI(base_url=base_url, api_key=api_key)
 
     def get_task_config(self, task: str) -> Dict[str, Any]:
-        return self.tasks.get(task, {
+        task_aliases = {
+            "reasoning": "matcher",
+            "translation": "translate",
+        }
+        resolved_task = task_aliases.get(task, task)
+        return self.tasks.get(resolved_task, {
             "provider": "dashscope",
-            "model": "qwen3.8-flash",
-            "fallback_model": "qwen-flash",
+            "model": "deepseek-v4.1-flash",
+            "fallback_model": "deepseek-v4-pro-0813",
             "temperature": 0.0,
-            "timeout": 30
+            "timeout": 60
         })
 
     def json_completion(
@@ -57,7 +62,8 @@ class LLMClient:
         system_prompt: str,
         user_prompt: str,
         schema: Optional[Type[T]] = None,
-        retries: int = 2
+        temperature: Optional[float] = None,
+        retries: int = 1
     ) -> Any:
         """结构化 JSON 生成调用，支持重试、回退模型与 Pydantic 校验"""
         tcfg = self.get_task_config(task)
@@ -71,14 +77,17 @@ class LLMClient:
         if fb and fb not in models_to_try:
             models_to_try.append(fb)
 
+        eff_temp = temperature if temperature is not None else tcfg.get("temperature", 0.0)
+        eff_timeout = tcfg.get("timeout", 60)
+
         last_err = None
         for model in models_to_try:
             for attempt in range(retries + 1):
                 try:
                     response = client.chat.completions.create(
                         model=model,
-                        temperature=tcfg.get("temperature", 0.0),
-                        timeout=tcfg.get("timeout", 60),
+                        temperature=eff_temp,
+                        timeout=eff_timeout,
                         response_format={"type": "json_object"} if "qwen" in model or "deepseek" in model else None,
                         messages=[
                             {"role": "system", "content": system_prompt},
@@ -86,7 +95,6 @@ class LLMClient:
                         ],
                     )
                     content = response.choices[0].message.content or ""
-                    # 修复和解析 JSON
                     parsed = json_repair.loads(content)
                     if schema:
                         return schema.model_validate(parsed)
@@ -95,11 +103,53 @@ class LLMClient:
                     last_err = e
                     logger.warning(f"Task '{task}' model '{model}' attempt {attempt + 1} failed: {e}")
                     if "AllocationQuota" in str(e) or "403" in str(e) or "FreeTierOnly" in str(e):
-                        # 免费配额限制直接切换到下一个备选模型，不再当前模型上重试
                         break
                     continue
 
         raise RuntimeError(f"Task '{task}' 所有模型调用均失败: {last_err}")
+
+    async def chat_json(
+        self,
+        task: str,
+        system_prompt: str,
+        user_prompt: str,
+        schema: Optional[Type[T]] = None,
+        temperature: Optional[float] = None,
+        retries: int = 1
+    ) -> Any:
+        """异步接口：结构化 JSON 调用"""
+        import asyncio
+        return await asyncio.to_thread(
+            self.json_completion,
+            task=task,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            schema=schema,
+            temperature=temperature,
+            retries=retries
+        )
+
+    async def chat_text(
+        self,
+        task: str,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: Optional[float] = None,
+        retries: int = 1
+    ) -> str:
+        """异步接口：非结构化纯文本调用"""
+        import asyncio
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        return await asyncio.to_thread(
+            self.text_completion,
+            task=task,
+            messages=messages,
+            temperature=temperature,
+            retries=retries
+        )
 
     def text_completion(
         self,

@@ -23,6 +23,30 @@ export const VerificationDashboardView: React.FC = () => {
     );
   }
 
+  if (currentCase.status === 'running') {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center mx-auto">
+          <Activity className="w-6 h-6 animate-pulse" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-zinc-900">
+            可核验技术仪表盘指标汇总中...
+          </h3>
+          <p className="text-xs text-zinc-500 leading-relaxed max-w-md mx-auto">
+            案件【{currentCase.case_id}】正在执行协同流水线，条文逐字核验与防线质检数据将在裁判 Agent 完成后更新。
+          </p>
+        </div>
+        <button
+          onClick={() => setCurrentView('workspace')}
+          className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-2xs"
+        >
+          前往 Agent 工作台查看实时进度
+        </button>
+      </div>
+    );
+  }
+
   const d = currentCase.dashboard || {
     exact_quotes_ratio: [0, 0] as [number, number],
     norms_cases_exist_all: false,
@@ -67,16 +91,18 @@ export const VerificationDashboardView: React.FC = () => {
         {/* 指标 1：引文逐字一致 (V2) */}
         <div className="p-5 bg-white rounded-xl border border-zinc-200 shadow-xs space-y-2">
           <span className="text-xs font-medium text-zinc-500 block">
-            德文逐字引文完全一致 (V2)
+            官方条文直接引注条数 (V2)
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold font-mono tabular-nums text-zinc-900">
               {d.exact_quotes_ratio[0]} / {d.exact_quotes_ratio[1]}
             </span>
-            <span className="text-xs text-zinc-600 font-mono font-medium">100% 官方正文</span>
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-mono font-medium">
+              100% 官方正文无篡改
+            </span>
           </div>
           <p className="text-[11px] text-zinc-400">
-            逐字核对 gesetze-im-internet.de 官方正文，无文字篡改
+            全篇 {d.exact_quotes_ratio[1]} 条陈述中包含 {d.exact_quotes_ratio[0]} 条法典原文引用，引文逐字对齐官方库
           </p>
         </div>
 
@@ -251,16 +277,19 @@ export const VerificationDashboardView: React.FC = () => {
 
           <div className="space-y-3">
             {/* 时点两态状态 (红/黄，不设绿) */}
-            <div className="p-3.5 bg-amber-50/70 rounded-lg border border-amber-200 space-y-1">
+            <div className="p-3.5 bg-amber-50/70 rounded-lg border border-amber-200 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-amber-900">
-                  时点状态 (V6)：黄色警示 (Yellow)
+                  法律时间效力核验 (V6)：黄色常态警示
                 </span>
-                <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.2 rounded font-mono text-amber-900 font-bold">
-                  无绿状态
+                <span className="text-[10px] bg-amber-200/80 px-2 py-0.5 rounded font-mono text-amber-900 font-bold" title="涉外民商法时间效力审慎原则：系统仅收录现行有效合并版法条，不设绝对无风险的绿灯免检状态，过渡法规则仍需承办人结合案情时点线下核验">
+                  司法审慎 · 不设绿灯免检
                 </span>
               </div>
-              <ul className="list-disc list-inside space-y-1 text-amber-800 text-[11px] mt-1">
+              <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                依据涉外审判时间效力规则，系统防线仅设红态（冲突拦截）与黄态（常态警示），绝不盲目放行绿灯：
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-amber-800 text-[11px] mt-0.5">
                 {(currentCase.timepoint?.reasons || []).map((r, idx) => (
                   <li key={idx}>{r}</li>
                 ))}

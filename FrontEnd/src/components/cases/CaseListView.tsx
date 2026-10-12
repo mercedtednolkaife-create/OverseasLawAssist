@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const CaseListView: React.FC = () => {
-  const { role, setCurrentView, loadCase, showToast } = useApp();
+  const { role, setCurrentView, loadCase, showToast, currentCase } = useApp();
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,10 +28,11 @@ export const CaseListView: React.FC = () => {
     setLoading(true);
     try {
       const data = await lawAgentApi.getCases(role);
-      setCases(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        setCases(data);
+      }
     } catch (err: any) {
       showToast('获取案件列表失败', 'error');
-      setCases([]);
     } finally {
       setLoading(false);
     }
@@ -56,6 +57,10 @@ export const CaseListView: React.FC = () => {
   };
 
   const handleSelectCase = async (caseId: string, targetView: 'review' | 'analysis' = 'review') => {
+    if (currentCase?.status === 'running' && caseId !== currentCase.case_id) {
+      showToast('当前案件正在执行协同研判，请稍候再切换', 'warning');
+      return;
+    }
     const success = await loadCase(caseId);
     if (success) {
       setCurrentView(targetView);
@@ -194,6 +199,15 @@ export const CaseListView: React.FC = () => {
                   <span className="font-mono font-bold text-xs text-zinc-900">
                     {item.case_id}
                   </span>
+                  {item.case_id === 'C004' || (item.title || '').includes('UCC') || (item.title || '').includes('美国') ? (
+                    <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-medium">
+                      🇺🇸 美国商事法 (UCC)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded font-medium">
+                      🇩🇪 德国联邦法
+                    </span>
+                  )}
                   <span className="text-[10px] text-zinc-400 font-mono">
                     · {item.mode}
                   </span>
