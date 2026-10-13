@@ -43,10 +43,10 @@ export const AgentWorkspaceView: React.FC = () => {
   // 争议焦点看板展开/折叠状态 (默认展开)
   const [isIssuesPanelExpanded, setIsIssuesPanelExpanded] = useState<boolean>(true);
 
-  // 序号 3 优化：红方律师反击模式切换 (neutral | red_teaming)
+  // 对抗模式切换 (neutral | red_teaming)
   const [chatMode, setChatMode] = useState<'neutral' | 'red_teaming'>('neutral');
 
-  // 序号 2 优化：Chat 探索成果“一键沉淀/反哺”至分析底稿
+  // 研判洞察成果沉淀至底稿
   const [savedInsights, setSavedInsights] = useState<SavedInsight[]>([]);
   const [savingInsightIndex, setSavingInsightIndex] = useState<number | null>(null);
   const [savedInsightIndices, setSavedInsightIndices] = useState<Set<number>>(new Set());
@@ -77,7 +77,6 @@ export const AgentWorkspaceView: React.FC = () => {
     Boolean(currentCase?.meta?.choice_of_law?.includes('UCC'));
 
   // 从当前案件动态提取争议焦点与抗辩要点
-  // 从当前案件动态提取争议焦点与抗辩要点（杜绝假数据兜底残留）
   const caseContext = useMemo(() => {
     const issuesList = currentCase?.issues || [];
     const defaultChoice = isUS ? '美国商事法及统一商法典 (UCC)' : '德国联邦法 (BGB / HGB)';
@@ -351,7 +350,7 @@ export const AgentWorkspaceView: React.FC = () => {
     }
   };
 
-  // 序号 2 优化：Chat 探索成果“一键沉淀/反哺”至分析底稿
+  // 研判洞察成果一键沉淀至底稿
   const handleSaveInsight = async (
     index: number,
     content: string,
@@ -701,6 +700,7 @@ export const AgentWorkspaceView: React.FC = () => {
             {workflow?.steps
               ?.filter((step) => step.status !== 'pending')
               .map((step, index) => {
+                const globalStepIndex = (workflow?.steps.findIndex((s) => s.step_id === step.step_id) ?? index) + 1;
                 const isLogExpanded = !!expandedLogSteps[step.step_id];
                 const metricChips = getStepMetricChips(step);
                 const isCompleted = ['completed', 'verified', 'delivered'].includes(step.status);
@@ -720,7 +720,7 @@ export const AgentWorkspaceView: React.FC = () => {
                               {getStepIcon(step.step_id)}
                             </div>
                             <span className="text-xs font-bold text-zinc-900">
-                              {index + 1}. {step.name.replace(/ Agent$/, '')}
+                              Step {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
                             </span>
                             {getAgentRoleBadge(step.step_id)}
                           </div>
@@ -744,14 +744,13 @@ export const AgentWorkspaceView: React.FC = () => {
                     className="rounded-xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs overflow-hidden transition-all ml-1 pl-2 relative"
                   >
                     <div className="p-3 pr-3.5 space-y-2">
-                      {/* 标题栏: 序号 + 名称 + 模型徽标 + 耗时 */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-lg border bg-blue-50 border-blue-200/80 flex items-center justify-center shrink-0">
                             {getStepIcon(step.step_id)}
                           </div>
                           <span className="text-xs font-bold text-zinc-900">
-                            {index + 1}. {step.name.replace(/ Agent$/, '')}
+                            Step {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
                           </span>
                           {getAgentRoleBadge(step.step_id)}
                         </div>
@@ -860,7 +859,7 @@ export const AgentWorkspaceView: React.FC = () => {
               </span>
             </div>
 
-            {/* 序号 3 优化：红方反击切换 + 视角切换 + 清空按钮 */}
+            {/* 研判模式切换 + 角色视角 + 清空历史 */}
             <div className="flex items-center gap-2">
               {/* 红方反击 vs 中立法理模式切换 */}
               <div className="flex items-center gap-0.5 bg-zinc-200/60 p-0.5 rounded-lg text-xs">
@@ -1042,7 +1041,7 @@ export const AgentWorkspaceView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 序号 2 优化：已沉淀的研判成果与备忘抽屉 */}
+                {/* 已沉淀的研判成果与备忘抽屉 */}
                 {savedInsights.length > 0 && (
                   <div className="pt-2 border-t border-zinc-100 space-y-1.5">
                     <div
@@ -1201,7 +1200,7 @@ export const AgentWorkspaceView: React.FC = () => {
                           )}
                         </div>
 
-                        {/* 序号 2 优化：一键沉淀成果至分析底稿 + 复制按钮 */}
+                        {/* 一键沉淀成果至分析底稿 + 复制按钮 */}
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"

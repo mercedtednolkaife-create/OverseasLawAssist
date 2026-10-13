@@ -18,21 +18,25 @@
 系统底层采用法域与语言解耦架构，目前已实现对两大世界主要法域体系的深度支持：
 
 #### 1. 德国联邦法域 (German Federal Law / `de_federal`)
-* **成文法典库 (Norms)**：官方标准结构化入库 **4,569** 条现行有效联邦法条，精确解析至“条 (Paragraph/Artikel)”、“款 (Absatz)”、“项 (Nummer)”，涵盖：
-  * 《德国民法典》(Bürgerliches Gesetzbuch, BGB)
-  * 《德国商法典》(Handelsgesetzbuch, HGB)
-  * 《德国有限责任公司法》(GmbH-Gesetz, GmbHG)
-  * 《德国民事诉讼法》(Zivilprozessordnung, ZPO)
-  * 《德国民法施行法/国际私法》(EGBGB)
+* **成文法典库 (Norms)**：官方标准结构化入库 **4,574** 条现行有效联邦法条，精确解析至“条 (Paragraph/Artikel)”、“款 (Absatz)”、“项 (Nummer)”，涵盖：
+  * 《德国民法典》(Bürgerliches Gesetzbuch, BGB) 2,551 条
+  * 《德国民事诉讼法》(Zivilprozessordnung, ZPO) 1,094 条
+  * 《德国商法典》(Handelsgesetzbuch, HGB) 696 条
+  * 《德国有限责任公司法》(GmbH-Gesetz, GmbHG) 127 条
+  * 《德国民法施行法/国际私法》(EGBGB) 101 条
+  * 欧盟《罗马条例 I》(Rome I Regulation) 5 条
 * **权威判例库 (Cases)**：深度收录德意志联邦最高法院 (Bundesgerichtshof, BGH) 涉外买卖、公司纠纷等金标准生效裁判文书，构建法条-先例引用关联拓扑网络。
 * **重大法典现代化修订时点库**：内建 2002 年债法现代化法案、2022 年买卖法与数字内容新规等关键法律变动时点，杜绝引用已失效或已变更条文。
 
 #### 2. 美国商事与联邦法域 (US Commercial Law / `us_commercial`)
-* **成文规范与法典重述**：
-  * 《统一商法典》第二篇买卖篇 (Uniform Commercial Code, UCC Article 2)
-  * 《美国法律重述·合同法（第二版）》(Restatement (Second) of Contracts)
-* **联邦巡回法院与州最高法院判例库**：
-  * 深度收录纽约州上诉法院 (NY Court of Appeals)、特拉华州最高法院 (Delaware Supreme Court)、联邦第二巡回上诉法院 (2nd Cir.) 权威商事判例。
+* **核心成文法规范库 (Norms 68 条，全局法条达 4,642 条)**：
+  * 《美国统一商法典》(UCC 49 条)：重点覆盖 Article 2 买卖篇全链条（合同成立通则 § 2-204、书面要件 § 2-201、要约与承诺 § 2-206、格式之战 § 2-207、合同变更免除对价 § 2-209、明示/默示适销性担保 § 2-313/§ 2-314、免责声明 § 2-316、补正权 § 2-508、风险转移 § 2-509、完美履行 § 2-601、合理期限异议通知 § 2-607、不安抗辩与充分保证 § 2-609、商业不能免责 § 2-615、替代采购Cover § 2-712、利润损失与可预见性损害赔偿 § 2-714/§ 2-715、诉讼时效 § 2-725）及 Article 1 总则商业惯例与诚实信用通则；
+  * 《特拉华州通用公司法》(DGCL 7 条)：覆盖公司章程董事免责 102(b)(7)、董事会权力与商业判断规则 BJR § 141、利益冲突安全港 § 144、股权转让限制 § 202、股东查账权 § 220、公司合并 § 251 与重大资产出售 § 271；
+  * 《美国法典》(U.S.C. 12 条)：覆盖 9 U.S.C. 联邦仲裁法 (FAA) 涉外仲裁协议强制执行、纽约公约在美直接适用与撤销裁决法定事由（§ 1-§ 10, § 201），以及 28 U.S.C. § 1782 跨境司法协助取证与外国主权豁免。
+* **联邦法院与州最高法院金标准判例库 (Cases 27 篇，含 15 篇全美代表性先例)**：
+  * 本地精选收录联邦最高法院 (SCOTUS)、第二/三/五/七巡回上诉法院 (Cir.)、特拉华州最高法院权威商事判例（涵盖 Eastern Air Lines v. McDonnell Douglas, Step-Saver v. Wyse, Delano Growers, Intel v. AMD, ZF Automotive, Unocal v. Mesa, Delchi Carrier v. Rotorex, Hall Street v. Mattel, Mitsubishi Motors v. Soler, First Options v. Kaplan, MFW 框架 Kahn v. M&F Worldwide, AMF v. McDonald's, ProCD v. Zeidenberg 等）；
+  * 构建**成文法-判例双向拓扑图谱**：119 条拓扑边 (edges) 与 47 条高频法条-判例物化索引 (hot_norm_cases)，检索成文法时毫秒级自动带出经典判例；
+  * 支持**轻量安全滚雪球扩充机制 (`scripts/snowball_expand_cases.py`)**：前置结合 **Shepardizing / KeyCite 先验有效性门禁**，自动拦截推翻失效的“坏法”（如已被全美巡回区一致推翻的 Roto-Lith 格式之战旧案）与未公开发表的备忘录，验证通过后一键安全落盘、自动重构分块与 BM25 词法索引。
 * **先例效力验真机制 (Shepardizing / KeyCite Verification)**：
   * 实时标注先例司法存续状态：`Good Law`（良好先例）、`Distinguished`（案情区分）、`Overruled`（已被推翻）或 `Questioned`（存疑），确保法源引用权威可靠。
 

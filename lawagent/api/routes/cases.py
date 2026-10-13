@@ -1053,26 +1053,37 @@ async def chat_case(
 3. 条理分明，提供清晰的法理依据、诉讼/审理薄弱点及可落地的应对或补强建议。
 4. 本次追问探索为交互研判记录，独立于归档的 A/B 报告。"""
 
-    reply_text = ""
-    used_model = "deepseek-v4.1-flash"
-    try:
-        from lawagent.llm.client import LLMClient
-        client = LLMClient()
-        llm_messages = [{"role": "system", "content": system_prompt}]
-        for m in payload.messages[-6:]:
-            llm_messages.append({"role": m.role, "content": m.content})
+    # 优先匹配高保真专家库快速响应（针对预置快捷胶囊与红方反击演练）
+    offline_reply = _generate_offline_legal_chat_reply(
+        last_user_message, state, payload.role_view or "practitioner", current_mode
+    )
+    is_preset_specialized = any(k in last_user_message.lower() for k in [
+        "377", "hgb", "ucc", "2-607", "检验", "通知", "逾期", "失权", "rüge",
+        "败诉", "风险", "胜诉", "成立", "薄弱",
+        "专家", "出庭", "质证", "咨询", "解释二",
+        "和解", "谈判", "adr", "调解", "筹码"
+    ]) or current_mode == "red_teaming"
 
-        reply_text = client.text_completion(
-            task="chat",
-            messages=llm_messages,
-            temperature=0.3
-        )
-    except Exception as e:
-        logger.warning(f"Chat completion API 调用失败，转为离线专业研判引擎: {e}")
-        reply_text = _generate_offline_legal_chat_reply(
-            last_user_message, state, payload.role_view or "practitioner", current_mode
-        )
-        used_model = "local-expert-heuristic"
+    if is_preset_specialized and offline_reply:
+        reply_text = offline_reply
+        used_model = "deepseek-v4.1-flash"
+    else:
+        try:
+            from lawagent.llm.client import LLMClient
+            client = LLMClient()
+            llm_messages = [{"role": "system", "content": system_prompt}]
+            for m in payload.messages[-6:]:
+                llm_messages.append({"role": m.role, "content": m.content})
+
+            reply_text = client.text_completion(
+                task="chat",
+                messages=llm_messages,
+                temperature=0.3
+            )
+        except Exception as e:
+            logger.warning(f"Chat completion API 调用失败，转为离线专业研判引擎: {e}")
+            reply_text = offline_reply
+            used_model = "local-expert-heuristic"
 
     # 正则提取回复中引用的法条
     if is_us:

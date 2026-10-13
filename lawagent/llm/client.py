@@ -40,7 +40,12 @@ class LLMClient:
             base_url = pcfg.get("base_url")
             env_var = pcfg.get("api_key_env", "OPENAI_API_KEY")
             api_key = os.environ.get(env_var, "")
-            self._clients[pname] = OpenAI(base_url=base_url, api_key=api_key)
+            self._clients[pname] = OpenAI(
+                base_url=base_url,
+                api_key=api_key,
+                timeout=18.0,
+                max_retries=1
+            )
 
     def get_task_config(self, task: str) -> Dict[str, Any]:
         task_aliases = {

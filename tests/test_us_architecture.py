@@ -148,3 +148,40 @@ async def test_us_end_to_end_workflow():
     # 验证 Critic 门禁与报告指纹
     assert len(res.checks) == 11
     assert res.dashboard.content_hash != ""
+
+
+def test_us_precedents_topology_and_graph_expansion():
+    """测试美国代表性判例入库、双向拓扑图谱与混合检索图扩散联想"""
+    import sqlite3
+    from lawagent.store.snapshots import SnapshotManager
+    from lawagent.store.graph import SQLiteGraphStore
+    from lawagent.store.retriever import HybridRetriever
+
+    mgr = SnapshotManager()
+    snap_id = mgr.get_current_snapshot_id()
+    conn = mgr.get_connection(snap_id)
+    cur = conn.cursor()
+
+    # 1. 验证 cases 表中金标准判例存在
+    cur.execute("SELECT count(*) FROM cases WHERE case_id NOT LIKE 'BGH%' AND case_id NOT LIKE 'OLG%'")
+    us_cases_count = cur.fetchone()[0]
+    assert us_cases_count >= 15, f"Expected at least 15 US cases in database, got {us_cases_count}"
+
+    # 2. 验证 hot_norm_cases 拓扑图谱映射
+    graph = SQLiteGraphStore(conn)
+    cases_2607 = graph.get_hot_cases_for_norm("UCC:§2-607")
+    assert len(cases_2607) > 0
+    assert any("Eastern-Air-Lines" in cid for cid in cases_2607)
+
+    cases_1782 = graph.get_hot_cases_for_norm("USC:28:§1782")
+    assert len(cases_1782) > 0
+    assert any("Intel" in cid for cid in cases_1782)
+
+    # 3. 验证端到端混合检索在检索成文法时通过图扩散带出先例
+    retriever = HybridRetriever(snapshot_mgr=mgr, graph_store=graph, snapshot_id=snap_id)
+    res = retriever.search("UCC 2-607 notice requirement reasonable time", top_k=6, expand_graph=True)
+    assert len(res) > 0
+    ref_ids = [ev.ref_id for ev in res]
+    assert any("UCC:§2-607" in rid for rid in ref_ids)
+    assert any("Delano-Growers" in rid or "Eastern-Air-Lines" in rid for rid in ref_ids)
+

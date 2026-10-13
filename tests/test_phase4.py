@@ -157,8 +157,8 @@ def test_agent_workflow_and_chat_endpoints(client):
     assert wf_data["total_steps"] == 7
     assert len(wf_data["steps"]) == 7
     step_ids = [s["step_id"] for s in wf_data["steps"]]
-    assert step_ids == ["extract", "precheck", "retrieval", "subsumption", "red_team_strategist", "judge", "drafter"]
-    assert wf_data["steps"][5]["model"] == "deepseek-v4-pro-0813"
+    assert step_ids == ["extract", "precheck", "retrieval", "subsumption", "red_team_strategist", "drafter", "judge"]
+    assert wf_data["steps"][6]["model"] == "deepseek-v4-pro-0813"
 
     # 1.1 方案 A：获取动态胜败边界推演与红队攻防对抗评估
     strat_res = client.get("/api/cases/C001/strategic-assessment")

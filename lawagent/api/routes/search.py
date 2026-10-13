@@ -87,8 +87,11 @@ def search_norms_and_cases(
         # 未指定特定法典时，默认返回跨法域（美商法、德联邦法、欧盟冲突法）核心条文与代表性先例
         core_norms = [
             "BGB:§433", "BGB:§434", "BGB:§437", "HGB:§377",
-            "UCC:§2-106", "UCC:§2-207", "UCC:§2-313", "UCC:§2-314", "UCC:§2-601", "UCC:§2-607", "UCC:§2-714",
-            "DGCL:§141", "USC:28§1782", "Rome_I:Art.3", "Rome_I:Art.4"
+            "UCC:§2-106", "UCC:§2-201", "UCC:§2-207", "UCC:§2-313", "UCC:§2-314", "UCC:§2-316",
+            "UCC:§2-508", "UCC:§2-601", "UCC:§2-607", "UCC:§2-609", "UCC:§2-615", "UCC:§2-714", "UCC:§2-719", "UCC:§2-725",
+            "DGCL:§102", "DGCL:§141", "DGCL:§220",
+            "USC:9:§2", "USC:9:§10", "USC:28:§1782",
+            "Rome_I:Art.3", "Rome_I:Art.4"
         ]
         if kind != "case":
             for cid in core_norms:
@@ -110,9 +113,13 @@ def search_norms_and_cases(
 
         if kind != "norm":
             core_cases = [
-                "CASE:BGH:VIII ZR 12/20:2021-05-12",
-                "CASE:SCOTUS:Intel v. AMD:2004",
-                "CASE:2ND-CIR:Filanto v. Chilewich:1992"
+                "BGH:VIII ZR 12/20:2021-05-12",
+                "5TH-CIR:Eastern-Air-Lines-v-McDonnell:1976",
+                "SCOTUS:Intel-v-AMD:2004",
+                "3RD-CIR:Step-Saver-v-Wyse:1991",
+                "2ND-CIR:Filanto-v-Chilewich:1992",
+                "DEL:Unocal-v-Mesa:1985",
+                "SCOTUS:Hall-Street-v-Mattel:2008",
             ]
             for case_id in core_cases:
                 case_data = snapshot_mgr.case_lookup(case_id)

@@ -157,12 +157,13 @@ class SnapshotManager:
         if not conn:
             return None
         cur = conn.cursor()
+        clean_cid = case_id.replace("CASE:", "").strip()
         cur.execute(
             """SELECT case_id, court, senate, decided, az, ecli, doctype, leitsatz, tenor, tatbestand, gruende, norms_meta, source_url
                FROM cases
-               WHERE case_id = ? OR az = ?
+               WHERE case_id = ? OR case_id = ? OR az = ? OR az LIKE ?
                LIMIT 1""",
-            (case_id, case_id)
+            (clean_cid, case_id, case_id, f"%{clean_cid}%")
         )
         row = cur.fetchone()
         return dict(row) if row else None
