@@ -482,44 +482,40 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
   return (
     <div
       id="module-summary"
-      className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden mb-6 transition-all"
+      className="glass-panel-elevated rounded-2xl border border-zinc-200/90 shadow-elevation-2 overflow-hidden mb-6 transition-all card-interactive"
     >
       {/* 
         ========================================================================
-        1. 顶层战略决策指挥总纲 (Deep Midnight Executive Briefing Banner)
-        参考机构级金融/法律研判智库风格，坚决规避 AI 味色彩与浮夸光效
+        1. 顶层战略决策指挥总纲 (高质感浅色卡片)
         ========================================================================
       */}
-      <div className="bg-[#0f172a] text-white p-5 md:p-6 space-y-4">
+      <div className="bg-white border-b border-zinc-200/90 p-5 md:p-6 space-y-4">
         {/* 顶部标签行：案件元数据与多角色视角切换 */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-100 pb-3.5">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold tracking-wide uppercase bg-slate-800 text-blue-400 border border-slate-700">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              EXECUTIVE BRIEFING · 全景法律研判总纲
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold tracking-wide uppercase bg-blue-50 text-blue-700 border border-blue-200/80">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              全景法律研判总纲
             </span>
-            <span className="text-xs font-mono text-slate-400">
-              案号：<strong className="text-slate-200">{case_id}</strong>
+            <span className="text-xs font-mono text-zinc-500">
+              案号：<strong className="text-zinc-800">{case_id}</strong>
             </span>
-            <span className="text-slate-600">|</span>
-            <span className="text-xs font-mono text-slate-400">
-              准据法：<strong className="text-slate-200">{choice_of_law}</strong>
-            </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-950/80 text-blue-300 border border-blue-800/60">
-              {summaryContent.roleTag}
+            <span className="text-zinc-300">|</span>
+            <span className="text-xs font-mono text-zinc-500">
+              准据法：<strong className="text-zinc-800">{choice_of_law}</strong>
             </span>
           </div>
 
           {/* 角色视角选择器与复制按钮 */}
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg border border-zinc-200">
               <button
                 type="button"
                 onClick={() => setActiveTab('judicial')}
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-all ${
                   activeTab === 'judicial'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 <Gavel className="w-3 h-3" />
@@ -532,7 +528,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-all ${
                   activeTab === 'practitioner'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 <Briefcase className="w-3 h-3" />
@@ -545,7 +541,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-all ${
                   activeTab === 'public'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 <Globe className="w-3 h-3" />
@@ -556,33 +552,33 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
             <button
               type="button"
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 rounded-lg transition-colors shadow-2xs"
               title="复制全景研判总纲至剪贴板"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
               <span className="hidden sm:inline">{copied ? '已复制' : '复制总纲'}</span>
             </button>
           </div>
         </div>
 
         {/* 核心定性总断 */}
-        <div className="space-y-2.5">
-          <div className="text-[11px] font-mono text-slate-400 tracking-wider uppercase font-semibold flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-blue-400" />
+        <div className="space-y-2">
+          <div className="text-[11px] font-mono text-zinc-500 tracking-wider uppercase font-semibold flex items-center gap-1.5">
+            <Compass className="w-3.5 h-3.5 text-blue-600" />
             <span>核心裁决倾向总断与法律适用定性</span>
           </div>
-          <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-normal max-w-6xl">
+          <p className="text-xs md:text-sm text-zinc-800 leading-relaxed font-normal max-w-6xl">
             {summaryContent.qualitativeConclusion}
           </p>
         </div>
 
         {/* 关键条文胶囊条 */}
-        <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-[11px] font-mono text-slate-400 mr-1">审查核心规范:</span>
+        <div className="pt-2 border-t border-zinc-100 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-[11px] font-mono text-zinc-400 mr-1">审查核心规范:</span>
           {summaryContent.statutes.map((s, idx) => (
             <span
               key={idx}
-              className="px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 font-mono text-[11px] border border-slate-700/70"
+              className="px-2 py-0.5 rounded bg-zinc-50 text-zinc-700 font-mono text-[11px] border border-zinc-200"
             >
               {s}
             </span>
@@ -616,17 +612,14 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Scale className="w-4 h-4 text-blue-600" />
-                  <span>动态胜败边界 (Bounds)</span>
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
-                  假定推演
+                  <span>动态胜败边界</span>
                 </span>
               </div>
 
               <div className="space-y-2 text-[11px] leading-relaxed">
                 <div className="p-2 rounded bg-emerald-50/60 border border-emerald-100 text-slate-700">
                   <div className="font-bold text-emerald-800 text-[10px] uppercase mb-0.5">
-                    ● 充分胜诉路径 (Favorable)
+                    胜诉路径
                   </div>
                   <p className="line-clamp-2">
                     {favorableBranch?.condition_precedent || '原告举证证明隐蔽瑕疵并在商事合理期间内具名异议'}
@@ -635,7 +628,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
 
                 <div className="p-2 rounded bg-rose-50/60 border border-rose-100 text-slate-700">
                   <div className="font-bold text-rose-800 text-[10px] uppercase mb-0.5">
-                    ● 驳回失权红线 (Unfavorable)
+                    失权风险
                   </div>
                   <p className="line-clamp-2">
                     {unfavorableBranch?.condition_precedent || '未尽即时检验异议负担，标的物拟制受领，救济权消灭'}
@@ -660,7 +653,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Swords className="w-4 h-4 text-rose-600" />
-                  <span>红队首要致命抗辩 (D1)</span>
+                  <span>红队核心抗辩</span>
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
                   {topDefense?.lethal_index === 'critical' ? '致命威胁' : '高威胁'}
@@ -704,7 +697,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-emerald-600" />
-                  <span>要件事实涵摄状态</span>
+                  <span>要件事实涵摄</span>
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                   {satisfiedCount} / {elements.length || 3} 项已满足
@@ -763,10 +756,7 @@ ${topActions.map((a, i) => `   (${i + 1}) ${a}`).join('\n')}`;
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Target className="w-4 h-4 text-amber-600" />
-                  <span>关键补证行动清单</span>
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
-                  Top 2 优先调取
+                  <span>关键补证清单</span>
                 </span>
               </div>
 

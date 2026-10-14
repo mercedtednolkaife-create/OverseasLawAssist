@@ -28,14 +28,18 @@ import {
   BookmarkPlus,
   FolderArchive,
   Swords,
+  Maximize2,
+  Zap,
 } from 'lucide-react';
+import { AgentOrchestrationModal } from './AgentOrchestrationModal';
 
 export const AgentWorkspaceView: React.FC = () => {
-  const { currentCaseId, currentCase, role, openLawModal, showToast, refreshCurrentCase } = useApp();
+  const { currentCaseId, currentCase, role, openLawModal, showToast, refreshCurrentCase, setCurrentView } = useApp();
 
   const case_id = currentCaseId || 'C001';
   const [workflow, setWorkflow] = useState<AgentWorkflowResponse | null>(null);
   const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(true);
+  const [isOrchestrationOpen, setIsOrchestrationOpen] = useState(false);
 
   // 详情底稿展开状态 (默认全部收起)
   const [expandedLogSteps, setExpandedLogSteps] = useState<Record<string, boolean>>({});
@@ -599,22 +603,20 @@ export const AgentWorkspaceView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto text-xs">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-50 rounded-lg border border-zinc-200 text-zinc-600 font-medium text-[11px]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              <span>协同流水线: 主推理 Agent</span>
-            </span>
-            <span className="text-zinc-300">|</span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>独立复核: 裁判 Agent</span>
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsOrchestrationOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-blue-700 border border-blue-200/90 rounded-lg transition-all shadow-2xs font-medium cursor-pointer"
+            title="打开全屏 Multi-Agent 协同研判流程"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
+            <span>全屏协同监视</span>
+          </button>
 
           <button
             type="button"
             onClick={loadWorkflow}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-lg transition-colors shadow-2xs font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-lg transition-colors shadow-2xs font-medium cursor-pointer"
             title="刷新流水线状态"
           >
             <RotateCcw className={`w-3.5 h-3.5 ${loadingWorkflow ? 'animate-spin' : ''}`} />
@@ -711,7 +713,7 @@ export const AgentWorkspaceView: React.FC = () => {
                   return (
                     <div
                       key={step.step_id}
-                      className="rounded-xl border border-blue-500 ring-2 ring-blue-200/60 bg-blue-50/30 shadow-xs overflow-hidden ml-1 pl-2 relative animate-pulse"
+                      className="rounded-xl border border-blue-400 bg-blue-50/40 shadow-xs overflow-hidden ml-1 pl-2 relative"
                     >
                       <div className="p-3 pr-3.5 space-y-2">
                         <div className="flex items-center justify-between gap-2">
@@ -719,20 +721,18 @@ export const AgentWorkspaceView: React.FC = () => {
                             <div className="w-6 h-6 rounded-lg border bg-blue-600 text-white border-blue-600 flex items-center justify-center shrink-0">
                               {getStepIcon(step.step_id)}
                             </div>
-                            <span className="text-xs font-bold text-zinc-900">
-                              Step {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
+                            <span className="text-xs font-semibold text-zinc-900">
+                              {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
                             </span>
-                            {getAgentRoleBadge(step.step_id)}
                           </div>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-300 flex items-center gap-1 shadow-2xs">
-                            <RotateCcw className="w-2.5 h-2.5 animate-spin text-blue-600" />
-                            <span>推理执行中</span>
+                          <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
+                            <RotateCcw className="w-3 h-3 animate-spin" />
+                            <span>进行中</span>
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-blue-900 bg-white/80 p-2 rounded-lg border border-blue-100 font-medium">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping shrink-0" />
-                          <span className="truncate">{step.outputs_summary || 'Agent 正在进行多维法理研判...'}</span>
-                        </div>
+                        <p className="text-xs text-zinc-700 font-medium bg-white/80 p-2 rounded-lg border border-blue-100">
+                          {step.outputs_summary || '正在执行多维法理研判...'}
+                        </p>
                       </div>
                     </div>
                   );
@@ -743,70 +743,48 @@ export const AgentWorkspaceView: React.FC = () => {
                     key={step.step_id}
                     className="rounded-xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs overflow-hidden transition-all ml-1 pl-2 relative"
                   >
-                    <div className="p-3 pr-3.5 space-y-2">
+                    <div className="p-3 pr-3.5 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-lg border bg-blue-50 border-blue-200/80 flex items-center justify-center shrink-0">
                             {getStepIcon(step.step_id)}
                           </div>
-                          <span className="text-xs font-bold text-zinc-900">
-                            Step {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
+                          <span className="text-xs font-semibold text-zinc-900">
+                            {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
                           </span>
-                          {getAgentRoleBadge(step.step_id)}
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs">
-                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                            <span>已完成</span>
-                          </span>
+                        <div className="flex items-center gap-1.5 shrink-0 text-zinc-400 text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           {step.duration_ms > 0 && (
-                            <span className="text-[11px] font-mono text-zinc-400">
-                              {(step.duration_ms / 1000).toFixed(2)}s
+                            <span className="font-mono text-[11px]">
+                              {(step.duration_ms / 1000).toFixed(1)}s
                             </span>
                           )}
                         </div>
                       </div>
 
-                    {/* 关键产出指标胶囊 (字体保持深墨黑，浅色背景区分重点) */}
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {metricChips.map((chip, ci) => {
-                        const toneClass =
-                          chip.tone === 'green'
-                            ? 'bg-emerald-50/90 border-emerald-200/80'
-                            : chip.tone === 'yellow'
-                            ? 'bg-amber-50/90 border-amber-200/80'
-                            : chip.tone === 'blue'
-                            ? 'bg-blue-50/80 border-blue-200/70'
-                            : 'bg-zinc-50 border-zinc-200/80';
-                        return (
-                          <span
-                            key={ci}
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 shadow-2xs ${toneClass}`}
-                          >
-                            <span className="text-zinc-500 font-normal">{chip.label}:</span>
-                            <span className="text-zinc-900 font-medium">{chip.value}</span>
-                          </span>
-                        );
-                      })}
-                    </div>
+                      {/* 结构化产出简述 (纯文本排版，去除琐碎小标签) */}
+                      <p className="text-xs text-zinc-600 leading-relaxed pt-0.5">
+                        {step.outputs_summary || metricChips.map((chip) => `${chip.label}: ${chip.value}`).join(' · ')}
+                      </p>
 
-                    {/* 卡片底栏: 仅按需展开底稿日志按钮 */}
-                    <div className="pt-1 border-t border-zinc-100 flex items-center justify-end text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => toggleStepLogExpand(step.step_id)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-0.5 transition-colors"
-                      >
-                        <span>{isLogExpanded ? '收起底稿' : '执行底稿'}</span>
-                        {isLogExpanded ? (
-                          <ChevronUp className="w-3 h-3" />
-                        ) : (
-                          <ChevronDown className="w-3 h-3" />
-                        )}
-                      </button>
+                      {/* 卡片底栏: 仅按需展开底稿日志按钮 */}
+                      <div className="pt-1 border-t border-zinc-100 flex items-center justify-end text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => toggleStepLogExpand(step.step_id)}
+                          className="text-[10px] text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-0.5 transition-colors cursor-pointer"
+                        >
+                          <span>{isLogExpanded ? '收起底稿' : '执行底稿'}</span>
+                          {isLogExpanded ? (
+                            <ChevronUp className="w-3 h-3" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
                   {/* 按需展开的底稿数据 (默认折叠) */}
                   {isLogExpanded && (
@@ -954,21 +932,16 @@ export const AgentWorkspaceView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Scale className="w-3.5 h-3.5 text-blue-600" />
                 <span className="font-semibold text-zinc-900">
-                  当前案件争议焦点与抗辩攻防看板
+                  争议焦点与抗辩
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] bg-zinc-200 text-zinc-800 font-mono font-medium">
-                  {caseContext.issues.length} 核心争点
+                <span className="text-zinc-400 font-mono text-[11px]">
+                  ({caseContext.issues.length})
                 </span>
-                {savedInsights.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-50 text-blue-700 border border-blue-200 font-mono font-medium">
-                    {savedInsights.length} 项已沉淀底稿
-                  </span>
-                )}
               </div>
 
               <div className="flex items-center gap-1.5 text-zinc-400">
                 <span className="text-[10px] text-zinc-500">
-                  {isIssuesPanelExpanded ? '收起看板' : '展开争点'}
+                  {isIssuesPanelExpanded ? '收起' : '展开'}
                 </span>
                 {isIssuesPanelExpanded ? (
                   <ChevronUp className="w-3.5 h-3.5" />
@@ -983,13 +956,10 @@ export const AgentWorkspaceView: React.FC = () => {
               <div className="p-3.5 px-4 space-y-2.5 text-xs bg-white border-t border-zinc-100">
                 {/* 争议焦点列表 */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                    核心争议焦点:
-                  </span>
                   <div className="space-y-1.5">
                     {caseContext.issues.length === 0 ? (
                       <div className="p-3 text-center text-xs text-zinc-400 bg-zinc-50 rounded-lg border border-zinc-200">
-                        {isWorkflowCompleted ? '本案未录入特定争议焦点' : '协同流水线正在分析抽取争议焦点...'}
+                        {isWorkflowCompleted ? '本案未录入特定争议焦点' : '流水线分析中...'}
                       </div>
                     ) : (
                       caseContext.issues.map((iss, idx) => (
@@ -998,8 +968,8 @@ export const AgentWorkspaceView: React.FC = () => {
                           className="p-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 flex items-center justify-between gap-2 transition-colors"
                         >
                           <div className="flex items-start gap-1.5 min-w-0">
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-zinc-200 text-zinc-800 border border-zinc-300 shrink-0 mt-0.5">
-                              争点 {idx + 1}
+                            <span className="font-mono text-zinc-500 text-[11px] font-semibold shrink-0 mt-0.5">
+                              {idx + 1}.
                             </span>
                             <span className="text-zinc-800 text-[11px] leading-relaxed line-clamp-2">
                               {iss.text_zh}
@@ -1051,7 +1021,7 @@ export const AgentWorkspaceView: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <FolderArchive className="w-3.5 h-3.5 text-blue-600" />
                         <span className="text-[11px] font-semibold text-zinc-800">
-                          已沉淀探索底稿 ({savedInsights.length} 条已反哺至 B 包)
+                          已沉淀探索底稿 ({savedInsights.length} 条)
                         </span>
                       </div>
                       <span className="text-[10px] text-zinc-400">
@@ -1067,15 +1037,7 @@ export const AgentWorkspaceView: React.FC = () => {
                             className="p-2 rounded-lg bg-zinc-50 border border-zinc-200/80 text-[11px] space-y-1"
                           >
                             <div className="flex items-center justify-between">
-                              <span
-                                className={`px-1.5 py-0.2 rounded text-[9px] font-medium border ${
-                                  ins.category === 'red_team_defense'
-                                    ? 'bg-amber-50 text-zinc-900 border-amber-200'
-                                    : ins.category === 'trial_outline'
-                                    ? 'bg-blue-50 text-zinc-900 border-blue-200'
-                                    : 'bg-emerald-50 text-zinc-900 border-emerald-200'
-                                }`}
-                              >
+                              <span className="text-[10px] font-medium text-zinc-600">
                                 {ins.category === 'red_team_defense'
                                   ? '出庭防守要点'
                                   : ins.category === 'trial_outline'
@@ -1097,15 +1059,13 @@ export const AgentWorkspaceView: React.FC = () => {
             )}
           </div>
 
-          {/* 红方反击模式警示微条 */}
+          {/* 红方反击模式微条 */}
           {chatMode === 'red_teaming' && (
-            <div className="p-2 px-4 bg-amber-50/90 border-b border-amber-200/80 text-xs text-zinc-800 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="text-[11px]">
-                  <strong>{isUS ? '美方出庭反击' : '德方出庭反击'}模式已激活</strong>：模拟{isUS ? '美方资深出庭律师' : '德国资深商事大律师'}视角，专挑我方事实、时效及证据链漏洞，帮助排查防守盲区。
-                </span>
-              </div>
+            <div className="p-2 px-4 bg-amber-50/90 border-b border-amber-200/80 text-xs text-zinc-800 flex items-center gap-2">
+              <Flame className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="text-[11px] font-medium">
+                对抗演练模式：模拟对方出庭律师质证视角
+              </span>
             </div>
           )}
 
@@ -1144,22 +1104,13 @@ export const AgentWorkspaceView: React.FC = () => {
                     >
                       <span className="font-medium text-zinc-600">
                         {isUser
-                          ? '追问人'
+                          ? '我'
                           : msg.mode === 'red_teaming'
-                          ? (isUS ? '美方对抗律师 (Red-Teaming)' : '德方对抗律师 (Red-Teaming)')
-                          : '研判分析 Agent'}
+                          ? (isUS ? '美方对抗律师' : '德方对抗律师')
+                          : '研判分析'}
                       </span>
                       <span>·</span>
                       <span>{msg.timestamp}</span>
-                      {msg.mode === 'red_teaming' ? (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-amber-50 text-zinc-900 border border-amber-200">
-                          红方对抗反击
-                        </span>
-                      ) : !isUser ? (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          专业研判角色
-                        </span>
-                      ) : null}
                     </div>
 
                     <div
@@ -1264,26 +1215,57 @@ export const AgentWorkspaceView: React.FC = () => {
             })}
 
             {sending && (
-              <div className="flex items-start gap-2.5">
+              <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div
-                  className={`w-7 h-7 rounded-lg text-white flex items-center justify-center shrink-0 ${
-                    chatMode === 'red_teaming' ? 'bg-amber-600' : 'bg-blue-600'
+                  className={`w-8 h-8 rounded-xl text-white flex items-center justify-center shrink-0 shadow-md ${
+                    chatMode === 'red_teaming'
+                      ? 'bg-gradient-to-tr from-rose-600 to-amber-600 shadow-rose-500/20'
+                      : 'bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-blue-500/20'
                   }`}
                 >
                   {chatMode === 'red_teaming' ? (
-                    <Flame className="w-4 h-4 animate-bounce" />
+                    <Flame className="w-4 h-4 animate-bounce text-amber-200" />
                   ) : (
-                    <Bot className="w-4 h-4 animate-pulse" />
+                    <Sparkles className="w-4 h-4 animate-spin text-blue-200" />
                   )}
                 </div>
-                <div className="p-3 rounded-xl rounded-tl-none bg-white border border-zinc-200 shadow-2xs space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                    <span>
-                      {chatMode === 'red_teaming'
-                        ? (isUS ? '美方出庭律师正在组织事实与时效质证反击...' : '德方大律师正在寻找案情事实与检验时效漏洞并组织质证反击...')
-                        : (isUS ? '专家 Agent 正在结合案件事实与美国商事法典进行推导...' : '专家 Agent 正在结合案件事实与德国法典进行推导...')}
+                <div className="flex-1 max-w-[90%] p-4 rounded-2xl rounded-tl-none glass-panel border border-blue-200/90 shadow-elevation-1 space-y-2.5 relative overflow-hidden">
+                  {/* 微光流动扫过效果 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                      <span className="text-xs font-semibold gemini-gradient-text tracking-tight">
+                        {chatMode === 'red_teaming'
+                          ? (isUS ? '美方出庭对抗大律师 · 攻防推演中' : '德方出庭对抗大律师 · 攻防推演中')
+                          : 'DeepSeek / Gemini 法律研判引擎 · 要件涵摄中'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">
+                      LIVE INFERENCE
                     </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    {chatMode === 'red_teaming'
+                      ? (isUS
+                          ? '正在分析买方检验通知时点，比对 UCC § 2-607(3)(a) 逾期失权判例与 AS IS 格式条款有效性...'
+                          : '正在分析买方通知时点与合同条款，比对 HGB § 377 商事检验失权要件与 BGH 隐蔽瑕疵判例...')
+                      : (isUS
+                          ? '正在召回美国统一商法典 (UCC) § 2-314 适销性担保要件及 28 U.S.C. § 1782 跨境证据保全路径...'
+                          : '正在召回德意志联邦共和国民法典 (BGB) § 434, § 437 与商法典 (HGB) 规范，展开四段论涵摄推导...')}
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 text-[10px] text-zinc-400 font-mono">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                    <span>检索法源规范</span>
+                    <span>→</span>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                    <span>四段论归纳</span>
+                    <span>→</span>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                    <span>生成质证提纲</span>
                   </div>
                 </div>
               </div>
@@ -1374,6 +1356,22 @@ export const AgentWorkspaceView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 全屏沉浸式 Multi-Agent 协同神经拓扑监视模态 */}
+      {isOrchestrationOpen && (
+        <AgentOrchestrationModal
+          isOpen={isOrchestrationOpen}
+          onClose={() => setIsOrchestrationOpen(false)}
+          caseId={case_id}
+          caseTitle={currentCase?.title}
+          jurisdiction={currentCase?.meta?.jurisdiction}
+          onEnterWorkspace={() => setIsOrchestrationOpen(false)}
+          onEnterAnalysis={() => {
+            setIsOrchestrationOpen(false);
+            setCurrentView('analysis');
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -50,7 +50,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-zinc-50/70 text-zinc-900 antialiased font-sans">
+    <div className="min-h-screen flex bg-mesh-canvas text-zinc-900 antialiased font-sans">
       {/* 左侧可折叠导航边栏 (Linear / Claude 风格) */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -71,7 +71,7 @@ const MainLayout: React.FC = () => {
             {renderCurrentView()}
 
             {/* 底部法治合规备案与说明条 (极简克制) */}
-            <footer className="border-t border-zinc-200 bg-white py-4 px-6 text-xs text-zinc-400 mt-12">
+            <footer className="border-t border-zinc-200/80 bg-white/70 backdrop-blur-md py-4 px-6 text-xs text-zinc-400 mt-12">
               <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Scale className="w-3.5 h-3.5 text-zinc-500" />

@@ -10,7 +10,12 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Cpu,
+  Layers,
+  Globe,
+  CheckCircle2,
 } from 'lucide-react';
+import { AgentOrchestrationModal } from '../workspace/AgentOrchestrationModal';
 
 export const CaseEntryForm: React.FC = () => {
   const { setCurrentView, loadCase, showToast } = useApp();
@@ -37,6 +42,8 @@ export const CaseEntryForm: React.FC = () => {
     },
   ]);
   const [submitting, setSubmitting] = useState(false);
+  const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
+  const [isOrchestrationOpen, setIsOrchestrationOpen] = useState(false);
 
   const handleAddMaterial = () => {
     setMaterials([...materials, { name: '', desc_zh: '', excerpt_zh: '' }]);
@@ -143,9 +150,10 @@ export const CaseEntryForm: React.FC = () => {
         consent_version: 'v2026.10',
       });
 
-      showToast(`案件 ${result.case_id} 创建成功，进入 Agent 工作台`, 'success');
+      setCreatedCaseId(result.case_id);
+      setIsOrchestrationOpen(true);
       await loadCase(result.case_id, true);
-      setCurrentView('workspace');
+      showToast(`案件 ${result.case_id} 创建成功，已启动 Multi-Agent 协同研判`, 'success');
     } catch (err: any) {
       showToast(err.message || '创建案件失败', 'error');
     } finally {
@@ -154,17 +162,17 @@ export const CaseEntryForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-6">
-      <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-xs">
+    <div className="max-w-4xl mx-auto px-6 py-6 animate-in fade-in duration-300">
+      <div className="glass-panel-elevated rounded-2xl border border-zinc-200/90 overflow-hidden shadow-elevation-2">
         {/* 表单头部 */}
-        <div className="px-6 py-4 border-b border-zinc-200 bg-zinc-50/70 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-6 py-4.5 border-b border-zinc-200/80 bg-zinc-50/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-zinc-900 tracking-tight flex items-center gap-2">
               <FileText className="w-4 h-4 text-blue-600" />
-              涉外案情要素与法源查明录入
+              新建涉外查明案件
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              遵循《涉外民事关系法律适用法司法解释（二）》要素指引，输入涉案客观事实与时点参数
+              录入案情客观事实与合同准据法参数
             </p>
           </div>
 
@@ -175,7 +183,7 @@ export const CaseEntryForm: React.FC = () => {
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 hover:border-zinc-300 transition-colors duration-150 shadow-xs"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              德国法示范 (机床 C01)
+              德国法示范 (C01)
             </button>
             <button
               type="button"
@@ -183,7 +191,7 @@ export const CaseEntryForm: React.FC = () => {
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50/60 border border-blue-200 rounded-lg hover:bg-blue-100/60 transition-colors duration-150 shadow-xs"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              美国法示范 (芯片机台 C04)
+              美国法示范 (C04)
             </button>
           </div>
         </div>
@@ -517,25 +525,48 @@ export const CaseEntryForm: React.FC = () => {
           </div>
 
           {/* 提交按钮 */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
             <button
               type="button"
               onClick={() => setCurrentView('cases')}
-              className="px-4 py-2 text-xs font-medium text-zinc-600 hover:text-zinc-900"
+              className="px-4 py-2.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-colors"
             >
               取消并返回列表
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-xs disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-600 rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
             >
-              <span>{submitting ? '工作流启动中...' : '提交案情并开始查明'}</span>
+              <Cpu className="w-4 h-4 text-blue-200 animate-pulse" />
+              <span>{submitting ? 'Multi-Agent 启动中...' : '启动 Multi-Agent 深度研判流水线'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </form>
       </div>
+
+      {/* 全屏沉浸式 Multi-Agent 协同生成动效模态 */}
+      {isOrchestrationOpen && createdCaseId && (
+        <AgentOrchestrationModal
+          isOpen={isOrchestrationOpen}
+          onClose={() => {
+            setIsOrchestrationOpen(false);
+            setCurrentView('workspace');
+          }}
+          caseId={createdCaseId}
+          caseTitle={title}
+          jurisdiction={jurisdiction}
+          onEnterWorkspace={() => {
+            setIsOrchestrationOpen(false);
+            setCurrentView('workspace');
+          }}
+          onEnterAnalysis={() => {
+            setIsOrchestrationOpen(false);
+            setCurrentView('analysis');
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -73,7 +73,7 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
   };
 
   return (
-    <header className="h-12 bg-white border-b border-zinc-200 px-5 flex items-center justify-between gap-4 sticky top-0 z-20">
+    <header className="h-12 glass-panel border-b border-zinc-200/80 px-5 flex items-center justify-between gap-4 sticky top-0 z-20 shadow-xs">
       {/* 左侧：边栏折叠开关、面包屑与案件即时切换器 */}
       <div className="flex items-center gap-2 text-xs text-zinc-500 min-w-0">
         {onToggleCollapse && (
@@ -81,7 +81,7 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
             type="button"
             onClick={onToggleCollapse}
             title={collapsed ? '展开侧边栏' : '收起侧边栏'}
-            className="p-1.5 -ml-1.5 mr-0.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors duration-150 cursor-pointer shrink-0"
+            className="p-1.5 -ml-1.5 mr-0.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors duration-150 cursor-pointer shrink-0"
           >
             {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
@@ -101,15 +101,16 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
           <button
             type="button"
             onClick={() => setCaseMenuOpen(!caseMenuOpen)}
-            className="flex items-center gap-1 font-mono text-zinc-800 hover:text-zinc-950 px-1.5 py-0.5 rounded-md hover:bg-zinc-100 transition-colors duration-150 truncate max-w-[200px]"
+            className="flex items-center gap-1.5 font-mono text-zinc-800 hover:text-zinc-950 px-2 py-0.5 rounded-lg hover:bg-zinc-100/90 transition-all duration-150 truncate max-w-[220px] border border-zinc-200/60 bg-white/60 shadow-2xs"
             title="点击切换当前案件"
           >
-            <span className="truncate">{currentCase?.case_id || '未选择案件'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span className="truncate font-semibold">{currentCase?.case_id || '未选择案件'}</span>
             <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
           </button>
 
           {caseMenuOpen && (
-            <div className="absolute left-0 mt-1.5 w-72 bg-white rounded-xl border border-zinc-200 shadow-lg py-1.5 z-50 text-xs">
+            <div className="absolute left-0 mt-1.5 w-72 glass-panel-elevated rounded-xl border border-zinc-200/90 shadow-elevation-3 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-100">
                 切换案件工作台
               </div>

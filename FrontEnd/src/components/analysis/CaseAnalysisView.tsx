@@ -71,7 +71,7 @@ export const CaseAnalysisView: React.FC = () => {
   const navItems = [
     { id: 'module-summary', label: '全景研判总结' },
     { id: 'module-b1', label: '争议焦点' },
-    { id: 'module-b2', label: '要件事实比对' },
+    { id: 'module-b2', label: '构成要件比对' },
     { id: 'module-strategy', label: '胜败推演与红队攻防' },
     { id: 'module-b3', label: '证据链溯源' },
     { id: 'module-b4', label: '类案判例对照' },
@@ -482,7 +482,7 @@ export const CaseAnalysisView: React.FC = () => {
         优化方案：采用优雅克制的纯白工作卡片底，配细致 border-zinc-200，
         左侧带深海军蓝/冷蓝条强调 (blue-600)，告别大黑底，视觉开阔严谨。
       */}
-      <div className="bg-white rounded-xl border border-zinc-200/90 shadow-xs relative overflow-hidden transition-all">
+      <div className="glass-panel-elevated rounded-2xl border border-zinc-200/90 shadow-elevation-1 relative overflow-hidden transition-all">
         {/* 左侧专业冷蓝强调色条 */}
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
 
@@ -509,7 +509,7 @@ export const CaseAnalysisView: React.FC = () => {
             <button
               type="button"
               onClick={() => openLawModal('E2')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors duration-150 shadow-xs font-medium"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors duration-150 shadow-xs font-medium cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>查看权威法条 (E2)</span>
@@ -535,7 +535,7 @@ export const CaseAnalysisView: React.FC = () => {
       */}
       <section
         id="module-b1"
-        className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden transition-all"
+        className="glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden transition-all card-interactive"
       >
         {/* 模块头部条 */}
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -545,8 +545,7 @@ export const CaseAnalysisView: React.FC = () => {
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                争议焦点清单
-                <span className="text-zinc-400 font-normal">| 法律适用争点与案件事实争点</span>
+                争议焦点
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 法律适用与案件事实分歧梳理
@@ -765,7 +764,7 @@ export const CaseAnalysisView: React.FC = () => {
       */}
       <section
         id="module-b2"
-        className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden transition-all"
+        className="glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden transition-all card-interactive"
       >
         {/* 模块头部条 */}
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -775,11 +774,10 @@ export const CaseAnalysisView: React.FC = () => {
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                构成要件—案件事实比对与缺口矩阵
-                <span className="text-zinc-400 font-normal">| 确定性四态涵摄引擎</span>
+                构成要件比对
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                严格遵循确定性规则：事实要素全部命中方可判定条件具备；无事实要素清单的要件最多判定为部分具备
+                要件要素与案件事实四态涵摄比对
               </p>
             </div>
           </div>
@@ -1057,7 +1055,7 @@ export const CaseAnalysisView: React.FC = () => {
       */}
       <section
         id="module-b3"
-        className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden transition-all"
+        className="glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden transition-all card-interactive"
       >
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -1066,11 +1064,10 @@ export const CaseAnalysisView: React.FC = () => {
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                证据链闭环图谱与事实溯源
-                <span className="text-zinc-400 font-normal">| 材料 M# ➔ 事实 F# ➔ 要件 EL# ➔ 规范 §</span>
+                证据链溯源
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                审查当事人提交的事实证据材料能否支撑案情事实，标明未闭环之证据链断点与抗辩薄弱点
+                四阶因果证据链路闭环审查
               </p>
             </div>
           </div>
@@ -1407,7 +1404,7 @@ export const CaseAnalysisView: React.FC = () => {
       */}
       <section
         id="module-b4"
-        className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden transition-all"
+        className="glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden transition-all card-interactive"
       >
         <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -1416,13 +1413,10 @@ export const CaseAnalysisView: React.FC = () => {
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                {isUS ? '美国联邦法院 / 州法院类似先例对照' : '德意志联邦最高法院 (BGH) / 州高等法院类似判例对照'}
-                <span className="text-zinc-400 font-normal">| 裁判要旨权威比对</span>
+                类案判例对照
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                {isUS
-                  ? '以本案案件事实与美国联邦法院及州法院判例展开法律检索与要件比对，分析裁判要旨相同点与差异'
-                  : '以本案事实与联邦法院 Tatbestand 做向量与语义比对，分析裁判要旨相同点与差异，不预断本案结果'}
+                裁判要旨权威比对与先例要件参照
               </p>
             </div>
           </div>
@@ -1538,7 +1532,7 @@ export const CaseAnalysisView: React.FC = () => {
         {/* B5 适用法律入口检查 */}
         <div
           id="module-b5"
-          className="lg:col-span-5 bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden flex flex-col"
+          className="lg:col-span-5 glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden flex flex-col card-interactive"
         >
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center gap-3">
             <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-mono font-bold shadow-xs">
@@ -1546,7 +1540,7 @@ export const CaseAnalysisView: React.FC = () => {
             </span>
             <div>
               <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
-                适用法律入口检查清单
+                入口检查清单
               </h2>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 国际私法与实体法入口要件核验
@@ -1588,7 +1582,7 @@ export const CaseAnalysisView: React.FC = () => {
         {/* 向专业人士提问清单 */}
         <div
           id="module-b6"
-          className="lg:col-span-7 bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden flex flex-col"
+          className="lg:col-span-7 glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden flex flex-col card-interactive"
         >
           <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -1598,10 +1592,10 @@ export const CaseAnalysisView: React.FC = () => {
               <div>
                 <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
-                  向域外法执业律师与专家提问清单
+                  专家提问清单
                 </h2>
                 <p className="text-[11px] text-zinc-500 mt-0.5">
-                  汇集要件缺口与过渡法模糊地带 (咨询准备建议)
+                  要件缺口与实务模糊地带咨询准备
                 </p>
               </div>
             </div>

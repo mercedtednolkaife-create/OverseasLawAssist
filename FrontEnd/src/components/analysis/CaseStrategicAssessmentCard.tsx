@@ -106,7 +106,7 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
   return (
     <section
       id="module-strategy"
-      className="bg-white rounded-xl border border-zinc-200 shadow-xs overflow-hidden transition-all duration-200"
+      className="glass-panel rounded-2xl border border-zinc-200/90 shadow-elevation-1 overflow-hidden transition-all duration-300 card-interactive"
     >
       {/* 模块头部条 */}
       <div className="px-6 py-4 bg-zinc-50/70 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -116,10 +116,10 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
           </span>
           <div>
             <h2 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-              动态胜败边界推演与红队攻防对抗手册
+              胜败推演与红队攻防
             </h2>
             <p className="text-[11px] text-zinc-500 mt-0.5">
-              客观假定条件推演矩阵 · 对方关键抗辩预测与反制策略
+              客观假定条件推演与抗辩反制策略
             </p>
           </div>
         </div>
@@ -138,27 +138,19 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
 
       {!isCardCollapsed && (
         <div className="p-6 space-y-6">
-          {/* 客观中立原则警示条 */}
-          <div className="rounded-lg bg-blue-50/60 border border-blue-100/90 p-3.5 flex items-start gap-3 text-xs text-zinc-700">
-            <Shield className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <div className="space-y-0.5 leading-relaxed">
-              <span className="font-semibold text-zinc-900">【客观中立原则与司法裁量防线】</span>
-              <p className="text-zinc-600 text-[11px]">
-                根据最高人民法院涉外商事审判指导规范，严禁输出虚假单一定量胜诉率承诺。系统采用严格的
-                <strong className="text-zinc-800">“假定事实条件推演句式（If-Then 矩阵）”</strong>
-                与红队极端对抗视角，助办案律师精准预判法官心证分水岭并提前补强证据链。
-              </p>
-            </div>
+          {/* 客观中立原则提示条 */}
+          <div className="rounded-lg bg-zinc-50 border border-zinc-200/80 p-3 flex items-center gap-2.5 text-xs text-zinc-600">
+            <Shield className="w-4 h-4 text-blue-600 shrink-0" />
+            <span className="text-[11px]">
+              遵循客观中立原则：采用假定条件推演（If-Then 矩阵）预判裁判分水岭与反制策略，不承诺单一定量胜诉率。
+            </span>
           </div>
 
           {/* 胜败摇摆关键变量 / 心证分水岭 (Pivotal Factors) */}
           <div className="space-y-2.5">
             <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 uppercase tracking-wide">
               <Compass className="w-4 h-4 text-blue-600" />
-              <span>胜败摇摆关键变量 · 法官心证分水岭</span>
-              <span className="text-[11px] font-normal text-zinc-400">
-                (直接决定裁判走向的 3 大实质要件)
-              </span>
+              <span>裁判心证分水岭变量</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {pivotal_factors.map((factor, idx) => (
@@ -188,7 +180,7 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>动态胜败边界推演矩阵 ({outcome_branches.length})</span>
+              <span>胜败边界推演 ({outcome_branches.length})</span>
             </button>
             <button
               type="button"
@@ -200,7 +192,7 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
               }`}
             >
               <Swords className="w-3.5 h-3.5" />
-              <span>红队攻防对抗手册 ({red_team_defenses.length})</span>
+              <span>红队抗辩反制 ({red_team_defenses.length})</span>
             </button>
             <button
               type="button"
@@ -212,7 +204,7 @@ export const CaseStrategicAssessmentCard: React.FC<CaseStrategicAssessmentCardPr
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>关键调取补证与防御布局清单 ({actionable_checklist.length})</span>
+              <span>关键补证清单 ({actionable_checklist.length})</span>
             </button>
           </div>
 

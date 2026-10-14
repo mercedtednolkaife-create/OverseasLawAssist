@@ -827,7 +827,7 @@ export const ReportReviewView: React.FC = () => {
               <div key={tr.step} className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 text-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-zinc-900">
-                    Step {tr.step}: {tr.action}
+                    {tr.step}. {tr.action}
                   </span>
                   <span className="text-zinc-500">命中候选数: {tr.hits_count}</span>
                 </div>
