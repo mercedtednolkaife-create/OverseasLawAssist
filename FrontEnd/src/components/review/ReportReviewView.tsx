@@ -15,7 +15,6 @@ import {
   Download,
   AlertTriangle,
   RotateCcw,
-  Sparkles,
   Layers,
   Search,
   CheckCircle2,
@@ -24,7 +23,7 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   BookOpen,
-  Scale,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const ReportReviewView: React.FC = () => {
@@ -64,7 +63,7 @@ export const ReportReviewView: React.FC = () => {
           onClick={() => setCurrentView('cases')}
           className="px-3.5 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-xs"
         >
-          查看案件台账
+          查看历史查明案件
         </button>
       </div>
     );
@@ -195,57 +194,50 @@ export const ReportReviewView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-      {/* 顶部案件基本信息与查明状态卡片 (Linear / Claude 风格，白底带冷蓝微强调条) */}
-      <div className="bg-white rounded-xl border border-zinc-200/90 shadow-xs relative overflow-hidden transition-all">
-        {/* 左侧专业冷蓝强调条 */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
-
-        <div className="p-5 pl-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="font-mono text-xs px-2 py-0.5 bg-zinc-100 text-zinc-700 font-semibold rounded border border-zinc-200/80">
-                [{currentCase.case_id}]
-              </span>
-              <h1 className="text-base font-bold text-zinc-900 tracking-tight">
-                {(currentCase.meta?.parties && currentCase.meta.parties.length > 0
-                  ? currentCase.meta.parties.join(' vs ')
-                  : null) ||
-                  currentCase.meta?.contract_type ||
-                  (isUS ? '涉美跨境商事买卖与担保违约争议' : '涉德跨境商事合同与履行瑕疵争议')}
-              </h1>
-              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                双语报告与审阅 (Review Canvas)
-              </span>
+    <div className="apple-page-pane max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* 顶部案件基本信息与查明状态卡片：符合 Apple Bento 规范 */}
+      <div className="apple-bento-card rounded-[28px] p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+              <FileText className="w-4 h-4 text-blue-600" />
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-              <span>当事人: {currentCase.meta?.parties?.join(' vs ') || (isUS ? '中国买方 vs 美国加州卖方' : '中国卖方 vs 德国买方')}</span>
-              <span>·</span>
-              <span>准据法: {currentCase.meta?.choice_of_law || (isUS ? '美国商事法 (UCC & 联邦法)' : '德国实体法')}</span>
-              <span>·</span>
-              <span className="font-mono text-[11px]">快照库: {currentCase.snapshot_id}</span>
-              <span>·</span>
-              <span>CISG排除: {currentCase.meta?.cisg_excluded ? '已明示排除' : '待确认'}</span>
+            <span className="font-mono text-xs px-2.5 py-0.5 bg-slate-100 text-slate-700 font-semibold rounded-lg border border-slate-200/70">
+              {currentCase.case_id}
+            </span>
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              {currentCase.title || currentCase.meta?.title || currentCase.meta?.contract_type || (isUS ? '涉美商事买卖违约争议查明' : '涉德涉外买卖合同瑕疵争议查明')}
+            </h1>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+              <span className="font-medium">双语查明报告</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setCurrentView('analysis')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-2xs"
-            >
-              <FileText className="w-3.5 h-3.5 text-blue-600" />
-              <span>切换至案情深度分析包</span>
-            </button>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pl-11.5">
+            <span>当事人: {currentCase.meta?.parties?.join(' vs ') || (isUS ? '中国买方 vs 美国卖方' : '中国卖方 vs 德国买方')}</span>
+            <span className="text-slate-300">·</span>
+            <span>准据法: {currentCase.meta?.choice_of_law || (isUS ? '美国统一商法典 (UCC)' : '德国实体法 (BGB/HGB)')}</span>
+            <span className="text-slate-300">·</span>
+            <span>CISG状态: {currentCase.meta?.cisg_excluded ? '已明示排除' : '公约适用待审'}</span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setCurrentView('analysis')}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/80 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95"
+          >
+            <FileText className="w-3.5 h-3.5 text-slate-500" />
+            <span>切换至案情深度分析</span>
+          </button>
         </div>
       </div>
 
-      {/* 闸门中断警示条 (严格符合 zinc + amber 风格) */}
+      {/* 闸门中断警示条 */}
       {currentCase.status === 'paused_cisg' && (
-        <div className="p-3.5 bg-amber-50/80 rounded-lg border border-amber-200 text-xs flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-amber-900">
+        <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200/80 text-xs flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 text-amber-900">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
               <strong>S2 国际私法闸门中断：</strong>
@@ -254,7 +246,7 @@ export const ReportReviewView: React.FC = () => {
           </div>
           <button
             onClick={() => setShowCisgModal(true)}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-2xs"
+            className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-2xs cursor-pointer"
           >
             立即确认 CISG
           </button>
@@ -262,9 +254,9 @@ export const ReportReviewView: React.FC = () => {
       )}
 
       {currentCase.status === 'paused_s3' && (
-        <div className="p-3.5 bg-zinc-100/90 rounded-lg border border-zinc-300 text-xs flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-zinc-900">
-            <Clock className="w-4 h-4 text-zinc-600 shrink-0" />
+        <div className="p-4 bg-slate-100/90 rounded-2xl border border-slate-200 text-xs flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 text-slate-900">
+            <Clock className="w-4 h-4 text-slate-600 shrink-0" />
             <span>
               <strong>S3 争点需求单中断：</strong>
               争点拆解与待查明问题已初步就绪，请人工核验争议事实标记及{isUS ? '英文' : '德语'}检索式。
@@ -272,7 +264,7 @@ export const ReportReviewView: React.FC = () => {
           </div>
           <button
             onClick={() => setShowDecompModal(true)}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-2xs"
+            className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-2xs cursor-pointer"
           >
             核验争点需求单
           </button>
@@ -280,25 +272,25 @@ export const ReportReviewView: React.FC = () => {
       )}
 
       {/* 头部控制区：视图 Tab 切换与操作按钮 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         {/* 左侧 Segmented Control */}
-        <div className="flex items-center gap-1 p-0.5 bg-zinc-100 rounded-lg text-xs">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl text-xs border border-slate-200/60">
           <button
             onClick={() => setActiveTab('side_by_side')}
-            className={`px-3 py-1.5 rounded-md transition-colors duration-150 font-medium ${
+            className={`px-4 py-2 rounded-xl transition-all duration-150 font-medium cursor-pointer ${
               activeTab === 'side_by_side'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'text-zinc-600 hover:text-zinc-900'
+                ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            并排比对视图 (Canvas)
+            并排比对研读
           </button>
           <button
             onClick={() => setActiveTab('matrix')}
-            className={`px-3 py-1.5 rounded-md transition-colors duration-150 font-medium ${
+            className={`px-4 py-2 rounded-xl transition-all duration-150 font-medium cursor-pointer ${
               activeTab === 'matrix'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'text-zinc-600 hover:text-zinc-900'
+                ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             要件—证据矩阵
@@ -309,10 +301,10 @@ export const ReportReviewView: React.FC = () => {
               const t = await lawAgentApi.getSearchTraces(currentCase.case_id);
               setTraces(t);
             }}
-            className={`px-3 py-1.5 rounded-md transition-colors duration-150 font-medium ${
+            className={`px-4 py-2 rounded-xl transition-all duration-150 font-medium cursor-pointer ${
               activeTab === 'trace'
-                ? 'bg-white text-zinc-900 shadow-xs'
-                : 'text-zinc-600 hover:text-zinc-900'
+                ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             检索轨迹回溯
@@ -323,33 +315,33 @@ export const ReportReviewView: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowFollowup(!showFollowup)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors duration-150 shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200/80 rounded-xl hover:bg-slate-50 transition-all duration-150 shadow-2xs cursor-pointer active:scale-95"
           >
-            <MessageSquarePlus className="w-3.5 h-3.5 text-zinc-500" />
+            <MessageSquarePlus className="w-3.5 h-3.5 text-slate-500" />
             <span>追加待查明问题</span>
           </button>
 
           {/* 导出按钮组合 */}
-          <div className="flex items-center border border-zinc-200 rounded-lg overflow-hidden bg-white shadow-xs">
+          <div className="flex items-center border border-slate-200/80 rounded-xl overflow-hidden bg-white shadow-2xs">
             <button
               onClick={() => handleExport('docx')}
               disabled={exporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 transition-colors duration-150 border-r border-zinc-200"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition-colors duration-150 border-r border-slate-200/80 cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-zinc-500" />
+              <Download className="w-3.5 h-3.5 text-slate-500" />
               <span>导出材料包 (DOCX)</span>
             </button>
             <button
               onClick={() => handleExport('json')}
               title="导出 JSON"
-              className="px-2.5 py-1.5 text-xs font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors duration-150 border-r border-zinc-200"
+              className="px-3 py-2 text-xs font-mono text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors duration-150 border-r border-slate-200/80 cursor-pointer disabled:opacity-50"
             >
               JSON
             </button>
             <button
               onClick={() => handleExport('md')}
               title="导出 Markdown"
-              className="px-2.5 py-1.5 text-xs font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-colors duration-150"
+              className="px-3 py-2 text-xs font-mono text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors duration-150 cursor-pointer disabled:opacity-50"
             >
               MD
             </button>
@@ -361,13 +353,13 @@ export const ReportReviewView: React.FC = () => {
       {showFollowup && (
         <form
           onSubmit={handleFollowup}
-          className="p-4 bg-white rounded-lg border border-zinc-200 shadow-xs space-y-3"
+          className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-3"
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-zinc-900">
-              追加待查明问题 (沿用当前快照沙箱，不影响已确认结果)
+            <h4 className="text-xs font-bold text-slate-900">
+              追加待查明法律争点 (独立补充，不影响已确认结果)
             </h4>
-            <span className="text-[11px] text-zinc-400">最多可追加5项</span>
+            <span className="text-[11px] text-slate-400">最多可追加5项</span>
           </div>
           <div className="flex gap-2">
             <input
@@ -396,11 +388,11 @@ export const ReportReviewView: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* 左侧：中文查明陈述与审阅采纳 (7列) */}
           <div className="lg:col-span-7 space-y-3">
-            <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
-              <span className="font-semibold text-zinc-900">
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span className="font-bold text-slate-900">
                 中文查明陈述与认定依据 ({allStatements.length}条)
               </span>
-              <span className="text-[11px] text-zinc-400">点击语句即可于右侧联动定位外文法源出处</span>
+              <span className="text-[11px] text-slate-400">点击语句即可于右侧联动定位外文法源出处</span>
             </div>
 
             <div className="space-y-3">
@@ -412,23 +404,23 @@ export const ReportReviewView: React.FC = () => {
                   <div
                     key={st.sid}
                     onClick={() => handleSelectStatement(st)}
-                    className={`p-4 rounded-xl border text-xs transition-all duration-150 cursor-pointer ${
+                    className={`p-4 sm:p-5 rounded-2xl border text-xs transition-all duration-150 cursor-pointer shadow-2xs ${
                       isSelected
                         ? 'border-blue-600 bg-white ring-2 ring-blue-500/15 shadow-xs'
-                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                        : 'border-slate-200/80 bg-white hover:border-slate-300'
                     }`}
                   >
                     {/* 陈述头部：编号、等级、所属要件 */}
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-zinc-900">{st.sid}</span>
+                        <span className="font-mono font-bold text-slate-900">{st.sid}</span>
                         <GradeBadge grade={st.grade || 'A'} />
                         {st.element_id && (
-                          <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded font-mono font-semibold">
+                          <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md font-mono font-semibold">
                             要件: {st.element_id}
                           </span>
                         )}
-                        <span className="text-[10px] text-zinc-400">
+                        <span className="text-[10px] text-slate-400">
                           {st.part === 'A' ? 'A部·法规材料' : 'B部·咨询准备'}
                         </span>
                       </div>
@@ -436,17 +428,17 @@ export const ReportReviewView: React.FC = () => {
                       {/* 审阅状态 */}
                       <div>
                         {st.review_action === 'accept' && (
-                          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px] font-medium border border-emerald-200">
+                          <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg text-[11px] font-medium border border-emerald-200/80">
                             已采纳
                           </span>
                         )}
                         {st.review_action === 'edit' && (
-                          <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-[11px] font-medium border border-blue-200">
+                          <span className="text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg text-[11px] font-medium border border-blue-200/80">
                             已修正
                           </span>
                         )}
                         {st.review_action === 'reject' && (
-                          <span className="text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded text-[11px] font-medium border border-zinc-200">
+                          <span className="text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-lg text-[11px] font-medium border border-slate-200/80">
                             已拒绝
                           </span>
                         )}
@@ -460,11 +452,11 @@ export const ReportReviewView: React.FC = () => {
                           rows={3}
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs border border-zinc-300 rounded-lg focus:outline-none"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600"
                         />
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <label className="text-[10px] text-zinc-500 block mb-0.5">
+                            <label className="text-[10px] text-slate-500 block mb-0.5">
                               修改错误分类
                             </label>
                             <select
@@ -472,7 +464,7 @@ export const ReportReviewView: React.FC = () => {
                               onChange={(e) =>
                                 setEditErrorType(e.target.value as ReviewErrorType)
                               }
-                              className="w-full px-2 py-1 text-xs border border-zinc-300 rounded-lg bg-white"
+                              className="w-full px-2 py-1 text-xs border border-slate-300 rounded-xl bg-white"
                             >
                               <option value="translation">译文不准 (translation)</option>
                               <option value="citation">引注错误 (citation)</option>
@@ -486,7 +478,7 @@ export const ReportReviewView: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="text-[10px] text-zinc-500 block mb-0.5">
+                            <label className="text-[10px] text-slate-500 block mb-0.5">
                               人工审改批注
                             </label>
                             <input
@@ -494,7 +486,7 @@ export const ReportReviewView: React.FC = () => {
                               value={editNote}
                               onChange={(e) => setEditNote(e.target.value)}
                               placeholder="说明修正理由..."
-                              className="w-full px-2 py-1 text-xs border border-zinc-300 rounded-lg bg-white"
+                              className="w-full px-2 py-1 text-xs border border-slate-300 rounded-xl bg-white"
                             />
                           </div>
                         </div>
@@ -502,7 +494,7 @@ export const ReportReviewView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setEditingSid(null)}
-                            className="px-2.5 py-1 text-xs text-zinc-600 hover:text-zinc-900"
+                            className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
                           >
                             取消
                           </button>
@@ -517,22 +509,22 @@ export const ReportReviewView: React.FC = () => {
                                 editText
                               )
                             }
-                            className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-xs"
+                            className="px-3.5 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-xs cursor-pointer"
                           >
                             保存修改并留痕
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-zinc-800 leading-relaxed text-xs">
+                      <p className="text-slate-800 leading-relaxed text-xs sm:text-sm">
                         {st.text_zh}
                       </p>
                     )}
 
                     {/* 引证徽标与审阅操作 */}
-                    <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center justify-between text-xs">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-zinc-400 text-[11px]">引用依据:</span>
+                        <span className="text-slate-400 text-[11px]">引用依据:</span>
                         {(st.evidence_ids || []).map((eid) => {
                           const ev = currentCase.evidence?.[eid];
                           return (
@@ -543,10 +535,10 @@ export const ReportReviewView: React.FC = () => {
                                   e.stopPropagation();
                                   setSelectedEid(eid);
                                 }}
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-mono transition-colors duration-150 ${
+                                className={`px-2 py-0.5 rounded-lg text-[11px] font-mono transition-colors duration-150 cursor-pointer ${
                                   selectedEid === eid
                                     ? 'bg-blue-600 text-white font-semibold shadow-2xs'
-                                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                 }`}
                               >
                                 [{eid}] {ev?.ref_id || ''}
@@ -558,7 +550,7 @@ export const ReportReviewView: React.FC = () => {
                                   openLawModal(eid);
                                 }}
                                 title="查阅法条全文"
-                                className="p-1 text-zinc-400 hover:text-blue-600 transition-colors ml-0.5"
+                                className="p-1 text-slate-400 hover:text-blue-600 transition-colors ml-0.5 cursor-pointer"
                               >
                                 <BookOpen className="w-3 h-3" />
                               </button>
@@ -577,7 +569,7 @@ export const ReportReviewView: React.FC = () => {
                             type="button"
                             onClick={() => handleReviewAction(st.sid, 'accept')}
                             title="采纳该条结论"
-                            className="p-1 text-zinc-400 hover:text-emerald-600 rounded hover:bg-zinc-100 transition-colors duration-150"
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-100 transition-colors duration-150 cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -590,7 +582,7 @@ export const ReportReviewView: React.FC = () => {
                               setEditErrorType(st.error_type || 'translation');
                             }}
                             title="修正陈述"
-                            className="p-1 text-zinc-400 hover:text-blue-600 rounded hover:bg-zinc-100 transition-colors duration-150"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition-colors duration-150 cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -605,7 +597,7 @@ export const ReportReviewView: React.FC = () => {
                               )
                             }
                             title="拒绝该条"
-                            className="p-1 text-zinc-400 hover:text-rose-600 rounded hover:bg-zinc-100 transition-colors duration-150"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition-colors duration-150 cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -614,7 +606,7 @@ export const ReportReviewView: React.FC = () => {
                     </div>
 
                     {st.review_note && (
-                      <div className="mt-2 text-[11px] text-zinc-500 bg-zinc-50 p-1.5 rounded-md border border-zinc-200/60">
+                      <div className="mt-2 text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200/60">
                         <strong>复核批注：</strong> {st.review_note} ({st.error_type})
                       </div>
                     )}
@@ -626,24 +618,24 @@ export const ReportReviewView: React.FC = () => {
 
           {/* 右侧：德语官方原文与核验译文 (5列) */}
           <div className="lg:col-span-5 sticky top-16 space-y-3">
-            <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
-              <span className="font-semibold text-zinc-900">{isUS ? '官方外文原文与出处核验' : '德语官方原文与出处核验'}</span>
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span className="font-bold text-slate-900">{isUS ? '官方外文原文与出处核验' : '德语官方原文与出处核验'}</span>
               <span className="font-mono text-[11px]">
                 {selectedEvidence ? `[${selectedEvidence.eid}] ${selectedEvidence.ref_id}` : ''}
               </span>
             </div>
 
             {selectedEvidence ? (
-              <div className="bg-white rounded-xl border border-zinc-200 p-5 space-y-4 shadow-xs">
+              <div className="apple-bento-card rounded-2xl p-5 space-y-4 shadow-2xs">
                 {/* 法律条款元数据 */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-zinc-900">
+                    <span className="font-mono text-xs font-bold text-slate-900">
                       {selectedEvidence.ref_id}
                     </span>
                     <GradeBadge grade={selectedEvidence.grade} />
                   </div>
-                  <div className="text-[11px] text-zinc-500 flex items-center justify-between">
+                  <div className="text-[11px] text-slate-500 flex items-center justify-between">
                     <span>
                       {selectedEvidence.kind === 'norm'
                         ? isUS
@@ -657,7 +649,7 @@ export const ReportReviewView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openLawModal(selectedEvidence.eid)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-mono transition-colors text-[11px] font-semibold"
+                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-mono transition-colors text-[11px] font-semibold cursor-pointer"
                       >
                         <BookOpen className="w-3 h-3" />
                         查阅法条
@@ -666,7 +658,7 @@ export const ReportReviewView: React.FC = () => {
                         href={selectedEvidence.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-zinc-600 hover:text-zinc-900 flex items-center gap-1 font-mono transition-colors"
+                        className="text-slate-600 hover:text-slate-900 flex items-center gap-1 font-mono transition-colors"
                       >
                         官方网页
                         <ExternalLink className="w-3 h-3" />
@@ -677,10 +669,10 @@ export const ReportReviewView: React.FC = () => {
 
                 {/* 官方外文原文代码块 */}
                 <div>
-                  <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                     {isUS ? 'Official Text (英文官方正文)' : 'Amtlicher Wortlaut (德语官方正文)'}
                   </label>
-                  <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 text-xs text-zinc-900 font-mono leading-relaxed whitespace-pre-wrap">
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 text-xs text-slate-900 font-mono leading-relaxed whitespace-pre-wrap">
                     {selectedEvidence.text_de}
                   </div>
                 </div>
@@ -688,20 +680,20 @@ export const ReportReviewView: React.FC = () => {
                 {/* 机器翻译对照 */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                       忠实中译对照 (术语库约束)
                     </label>
-                    <span className="text-[10px] text-zinc-500 bg-zinc-100 px-1.5 py-0.2 rounded font-mono">
+                    <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-mono">
                       非官方译文
                     </span>
                   </div>
-                  <div className="p-3 bg-zinc-50/70 rounded-lg border border-zinc-200 text-xs text-zinc-800 leading-relaxed">
+                  <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80 text-xs text-slate-800 leading-relaxed">
                     {currentCase.translations?.[selectedEvidence.eid] || '正在检索忠实对齐译文...'}
                   </div>
                 </div>
 
                 {/* 效力与 Stand 标注 (解释二要素) */}
-                <div className="p-2.5 bg-zinc-100/60 rounded-lg text-[11px] text-zinc-600 space-y-1 font-mono">
+                <div className="p-3 bg-slate-100/70 rounded-xl text-[11px] text-slate-600 space-y-1 font-mono border border-slate-200/60">
                   <div>
                     <strong>效力情况 (Stand)：</strong>{' '}
                     {selectedEvidence.stand || '官方最新现行文本'}
@@ -715,7 +707,7 @@ export const ReportReviewView: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="p-12 text-center bg-white rounded-lg border border-zinc-200 text-xs text-zinc-400">
+              <div className="p-12 text-center apple-bento-card rounded-2xl text-xs text-slate-400">
                 请在左侧点击任一条查明陈述以展开{isUS ? '外文法源' : '德文'}出处对照
               </div>
             )}
@@ -725,8 +717,8 @@ export const ReportReviewView: React.FC = () => {
 
       {/* 视图2：要件—证据矩阵 (Element-Evidence Matrix) */}
       {activeTab === 'matrix' && (
-        <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden shadow-xs">
-          <div className="px-5 py-3 bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-700 grid grid-cols-12 gap-4">
+        <div className="apple-bento-card rounded-[28px] overflow-hidden shadow-2xs">
+          <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-200/80 text-xs font-bold text-slate-700 grid grid-cols-12 gap-4">
             <span className="col-span-2">要件编号与名称</span>
             <span className="col-span-2">法源充分性 (S5)</span>
             <span className="col-span-3">关联法源证据 (E#)</span>
@@ -734,40 +726,40 @@ export const ReportReviewView: React.FC = () => {
             <span className="col-span-3">证据链缺口说明 (Gaps)</span>
           </div>
 
-          <div className="divide-y divide-zinc-200 text-xs">
+          <div className="divide-y divide-slate-100 text-xs">
             {(currentCase.elements || []).map((el) => (
-              <div key={el.element_id} className="px-5 py-4 grid grid-cols-12 gap-4 items-start">
+              <div key={el.element_id} className="px-6 py-4 grid grid-cols-12 gap-4 items-start hover:bg-slate-50/40 transition-colors">
                 <div className="col-span-2">
-                  <span className="font-mono font-bold text-zinc-900 block">
+                  <span className="font-mono font-bold text-slate-900 block">
                     [{el.element_id}]
                   </span>
-                  <span className="text-zinc-800 font-medium block mt-0.5">
+                  <span className="text-slate-800 font-semibold block mt-0.5">
                     {el.name_zh}
                   </span>
                 </div>
 
                 <div className="col-span-2">
                   {el.status === 'covered' && (
-                    <span className="inline-flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md font-medium border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      证据充分 (Covered)
+                    <span className="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl font-medium border border-emerald-200/80">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      证据充分
                     </span>
                   )}
                   {el.status === 'partial' && (
-                    <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-md font-medium border border-amber-200">
-                      <AlertTriangle className="w-3 h-3 text-amber-600" />
-                      部分支撑 (Partial)
+                    <span className="inline-flex items-center gap-1.5 text-amber-800 bg-amber-50 px-2.5 py-1 rounded-xl font-medium border border-amber-200/80">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      部分支撑
                     </span>
                   )}
                   {el.status === 'missing' && (
-                    <span className="inline-flex items-center gap-1 text-rose-800 bg-rose-50 px-2.5 py-0.5 rounded-md font-medium border border-rose-200">
-                      <X className="w-3 h-3 text-rose-500" />
-                      证据缺失 (Missing)
+                    <span className="inline-flex items-center gap-1.5 text-rose-800 bg-rose-50 px-2.5 py-1 rounded-xl font-medium border border-rose-200/80">
+                      <X className="w-3.5 h-3.5 text-rose-500" />
+                      证据缺失
                     </span>
                   )}
                 </div>
 
-                <div className="col-span-3 space-y-1">
+                <div className="col-span-3 space-y-1.5">
                   {(el.links || []).map((link) => {
                     const ev = currentCase.evidence?.[link.eid];
                     return (
@@ -778,29 +770,29 @@ export const ReportReviewView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => openLawModal(link.eid)}
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200 font-semibold transition-colors"
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg border border-blue-200/80 font-bold transition-colors cursor-pointer"
                           title="查阅该法源全文"
                         >
                           {link.eid}
                         </button>
-                        <span className="text-zinc-600 truncate">{ev?.ref_id}</span>
-                        <span className="text-[10px] text-zinc-400">({link.relation})</span>
+                        <span className="text-slate-600 truncate">{ev?.ref_id}</span>
+                        <span className="text-[10px] text-slate-400">({link.relation})</span>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="col-span-2 text-[11px] font-mono text-zinc-600">
+                <div className="col-span-2 text-[11px] font-mono text-slate-500">
                   <span>已执行 {el.rounds} / 2 轮改写</span>
                 </div>
 
-                <div className="col-span-3 text-zinc-600 text-xs leading-relaxed">
+                <div className="col-span-3 text-slate-600 text-xs leading-relaxed">
                   {el.gap_note ? (
-                    <span className="text-amber-800 bg-amber-50/60 p-1.5 rounded-md block border border-amber-200/50">
+                    <span className="text-amber-800 bg-amber-50/70 p-2 rounded-xl block border border-amber-200/60 leading-relaxed">
                       {el.gap_note}
                     </span>
                   ) : (
-                    <span className="text-zinc-400">核心法条与判例齐备，无显著缺口</span>
+                    <span className="text-slate-400">核心法条与判例齐备，无显著缺口</span>
                   )}
                 </div>
               </div>
@@ -811,39 +803,39 @@ export const ReportReviewView: React.FC = () => {
 
       {/* 视图3：检索轨迹 (Search Trace) */}
       {activeTab === 'trace' && (
-        <div className="bg-white rounded-lg border border-zinc-200 p-6 space-y-4 shadow-xs">
+        <div className="apple-bento-card rounded-[28px] p-6 space-y-5 shadow-2xs">
           <div>
-            <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-              <Search className="w-4 h-4 text-zinc-600" />
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Search className="w-4 h-4 text-blue-600" />
               检索轨迹与候选舍弃原因回溯 (可解释性审计)
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               记录 Researcher 节点在{isUS ? '美国商事及涉外法律库' : '德意志联邦法律库'}中混合检索 (BM25 + BGE-M3 + RRF 重排) 的每步执行轨迹
             </p>
           </div>
 
           <div className="space-y-3">
             {traces.map((tr) => (
-              <div key={tr.step} className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 text-xs space-y-2">
+              <div key={tr.step} className="p-4 sm:p-5 bg-slate-50/70 rounded-2xl border border-slate-200/80 text-xs space-y-2.5 hover:border-slate-300 transition-colors">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-mono font-bold text-slate-900">
                     {tr.step}. {tr.action}
                   </span>
-                  <span className="text-zinc-500">命中候选数: {tr.hits_count}</span>
+                  <span className="text-slate-500 font-mono text-[11px]">命中候选数: {tr.hits_count}</span>
                 </div>
-                <div className="font-mono text-[11px] text-zinc-700 bg-white p-2 rounded-md border border-zinc-200">
+                <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-xl border border-slate-200/80">
                   Query: {tr.query}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-zinc-400 text-[11px]">入选证据:</span>
+                  <span className="text-slate-400 text-[11px]">入选证据:</span>
                   {(tr.selected_ref_ids || []).map((ref) => (
-                    <span key={ref} className="font-mono bg-zinc-200 px-1.5 py-0.5 rounded text-[11px] font-medium text-zinc-800">
+                    <span key={ref} className="font-mono bg-white px-2 py-0.5 rounded-lg text-[11px] font-medium text-slate-800 border border-slate-200/70">
                       {ref}
                     </span>
                   ))}
                 </div>
-                <div className="text-[11px] text-zinc-500">
-                  <strong>候选过滤/舍弃考量：</strong> {tr.discarded_notes}
+                <div className="text-[11px] text-slate-500 leading-relaxed">
+                  <strong className="text-slate-700">候选过滤/舍弃考量：</strong> {tr.discarded_notes}
                 </div>
               </div>
             ))}

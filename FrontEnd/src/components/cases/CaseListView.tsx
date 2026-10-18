@@ -5,21 +5,19 @@ import { CaseSummary, CaseWorkflowStatus } from '../../types/lawAgent';
 import {
   FolderOpen,
   Plus,
-  Play,
   Trash2,
   Search,
   Clock,
-  Database,
-  ExternalLink,
   AlertCircle,
   CheckCircle2,
   PauseCircle,
+  ShieldCheck,
+  ArrowRight,
   FileText,
-  Scale,
 } from 'lucide-react';
 
 export const CaseListView: React.FC = () => {
-  const { role, setCurrentView, loadCase, showToast, currentCase } = useApp();
+  const { role, setCurrentView, loadCase, showToast, currentCase, openCaseEntryModal } = useApp();
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,7 +29,7 @@ export const CaseListView: React.FC = () => {
       if (Array.isArray(data)) {
         setCases(data);
       }
-    } catch (err: any) {
+    } catch {
       showToast('获取案件列表失败', 'error');
     } finally {
       setLoading(false);
@@ -44,19 +42,19 @@ export const CaseListView: React.FC = () => {
 
   const handleDelete = async (caseId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm(`确定彻底删除案件 [${caseId}] 吗？相关输入事实与血缘快照将被同步清理。`)) {
+    if (!window.confirm(`确定彻底删除案件 [${caseId}] 吗？`)) {
       return;
     }
     try {
       await lawAgentApi.deleteCase(caseId);
-      showToast(`案件 ${caseId} 已安全清理`, 'success');
+      showToast(`案件 ${caseId} 已成功删除`, 'success');
       fetchList();
-    } catch (err) {
+    } catch {
       showToast('删除案件失败', 'error');
     }
   };
 
-  const handleSelectCase = async (caseId: string, targetView: 'review' | 'analysis' = 'review') => {
+  const handleSelectCase = async (caseId: string, targetView: 'review' | 'analysis' = 'analysis') => {
     if (currentCase?.status === 'running' && caseId !== currentCase.case_id) {
       showToast('当前案件正在执行协同研判，请稍候再切换', 'warning');
       return;
@@ -71,43 +69,32 @@ export const CaseListView: React.FC = () => {
     switch (status) {
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1.5 text-zinc-900 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-            <CheckCircle2 className="w-3 h-3 text-zinc-700" />
-            查明就绪 · 可导出
-          </span>
-        );
-      case 'paused_cisg':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-            <PauseCircle className="w-3 h-3 text-amber-600" />
-            S2 待确认 CISG
-          </span>
-        );
-      case 'paused_s3':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-zinc-700 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-            <PauseCircle className="w-3 h-3 text-zinc-500" />
-            S3 待核验争点
-          </span>
-        );
-      case 'paused_s8':
-        return (
-          <span className="inline-flex items-center gap-1.5 text-zinc-800 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-            <PauseCircle className="w-3 h-3 text-zinc-700" />
-            S8 待人工复核
+          <span className="inline-flex items-center gap-1.5 text-blue-700 bg-blue-50/80 border border-blue-200/60 px-2.5 py-0.5 rounded-lg text-xs font-medium shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+            <span>查明就绪</span>
           </span>
         );
       case 'running':
         return (
-          <span className="inline-flex items-center gap-1.5 text-zinc-700 bg-zinc-100 border border-zinc-300 px-2 py-0.5 rounded-md text-[11px] font-medium animate-pulse">
-            <Clock className="w-3 h-3 text-zinc-500" />
-            检索执行中...
+          <span className="inline-flex items-center gap-1.5 text-blue-700 bg-blue-50/80 border border-blue-200/60 px-2.5 py-0.5 rounded-lg text-xs font-medium shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+            <span>推演中...</span>
+          </span>
+        );
+      case 'paused_cisg':
+      case 'paused_s3':
+      case 'paused_s8':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-amber-800 bg-amber-50/80 border border-amber-200/70 px-2.5 py-0.5 rounded-lg text-xs font-medium shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span>待确认</span>
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-zinc-500 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md text-[11px]">
-            草稿状态
+          <span className="inline-flex items-center gap-1.5 text-slate-500 bg-slate-100/80 border border-slate-200/80 px-2.5 py-0.5 rounded-lg text-xs font-medium shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+            <span>草稿</span>
           </span>
         );
     }
@@ -123,153 +110,153 @@ export const CaseListView: React.FC = () => {
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-      {/* 头部标题与操作 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-4">
-        <div>
-          <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
-            <FolderOpen className="w-4 h-4 text-zinc-700" />
-            涉外查明案件台账
-          </h1>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            严格固定只读数据快照，保障查明每一步推导皆可精确复现
-          </p>
+    <div className="apple-page-pane max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      {/* 头部标题与新建操作 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shadow-2xs shrink-0">
+            <FolderOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              历史查明案件
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              记录您过往查明的涉外案件，支持随时回顾深度法理分析与导出双语报告
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索案号、案由或合同类型..."
-              className="pl-8.5 pr-3 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white w-64 focus:outline-none focus:border-zinc-400 placeholder:text-zinc-400"
+              className="pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white w-64 focus:outline-none focus:border-blue-600/80 focus:ring-2 focus:ring-blue-500/10 placeholder:text-slate-400 transition-all shadow-2xs"
             />
           </div>
 
           <button
-            onClick={() => setCurrentView('entry')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-150 shadow-xs"
+            type="button"
+            onClick={openCaseEntryModal}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs shadow-blue-500/25 active:scale-[0.98] cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>新建查明任务</span>
+            <Plus className="w-4 h-4" />
+            <span>新建案件查明</span>
           </button>
         </div>
       </div>
 
-      {/* 列表主体 (Linear 极简数据表格) */}
+      {/* 列表主体 (Apple Bento 卡片流) */}
       {loading ? (
-        <div className="p-16 text-center text-xs text-zinc-400 space-y-2 bg-white rounded-xl border border-zinc-200">
-          <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin mx-auto" />
-          <p>正在读取案件台账...</p>
+        <div className="apple-bento-card rounded-[28px] p-16 text-center text-xs text-slate-400 space-y-3">
+          <div className="w-6 h-6 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
+          <p>正在读取历史查明案件...</p>
         </div>
       ) : filteredCases.length === 0 ? (
-        <div className="p-16 text-center bg-white rounded-xl border border-zinc-200 space-y-3">
-          <AlertCircle className="w-6 h-6 text-zinc-300 mx-auto" />
-          <h3 className="text-xs font-semibold text-zinc-900">暂无符合条件的案件</h3>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-            点击“新建查明任务”，录入涉外案情客观事实，启动德意志联邦法智能查明流程。
-          </p>
+        <div className="apple-bento-card rounded-[28px] p-16 text-center space-y-4">
+          <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-900">暂无符合条件的案件</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              点击“新建案件查明”，录入涉外案件事实要素与准据法，启动智能查明流程。
+            </p>
+          </div>
           <button
-            onClick={() => setCurrentView('entry')}
-            className="mt-2 px-3.5 py-1.5 text-xs font-medium text-zinc-900 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
+            type="button"
+            onClick={openCaseEntryModal}
+            className="mt-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs shadow-blue-500/25 cursor-pointer active:scale-[0.98]"
           >
-            录入第一起案件
+            新建第一起案件
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-zinc-200 divide-y divide-zinc-200 overflow-hidden shadow-xs">
-          <div className="px-5 py-3 bg-zinc-50 text-xs font-semibold text-zinc-500 grid grid-cols-12 gap-4">
-            <span className="col-span-4">案件编号与题名</span>
-            <span className="col-span-2">合同类型 / 订立日</span>
-            <span className="col-span-2">工作流状态</span>
-            <span className="col-span-2">只读快照版本</span>
-            <span className="col-span-2 text-right">操作</span>
-          </div>
+        <div className="space-y-3.5">
+          {filteredCases.map((item) => {
+            const isUSCase =
+              item.case_id === 'C004' ||
+              (item.title || '').includes('UCC') ||
+              (item.title || '').includes('美国');
 
-          {filteredCases.map((item) => (
-            <div
-              key={item.case_id}
-              onClick={() => handleSelectCase(item.case_id, 'review')}
-              className="px-5 py-3.5 hover:bg-zinc-50/80 transition-colors duration-150 grid grid-cols-12 gap-4 items-center cursor-pointer group"
-            >
-              <div className="col-span-4 pr-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-xs text-zinc-900">
-                    {item.case_id}
-                  </span>
-                  {item.case_id === 'C004' || (item.title || '').includes('UCC') || (item.title || '').includes('美国') ? (
-                    <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-medium">
-                      🇺🇸 美国商事法 (UCC)
+            return (
+              <div
+                key={item.case_id}
+                onClick={() => handleSelectCase(item.case_id, 'analysis')}
+                className="group apple-bento-card rounded-[28px] hover:border-slate-300 p-5 sm:p-6 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="space-y-2.5 flex-1 min-w-0">
+                  {/* 顶栏徽标 */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                      {item.case_id}
                     </span>
-                  ) : (
-                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded font-medium">
-                      🇩🇪 德国联邦法
-                    </span>
-                  )}
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    · {item.mode}
-                  </span>
+                    {isUSCase ? (
+                      <span className="text-xs bg-slate-100 text-slate-700 border border-slate-200/80 px-2.5 py-0.5 rounded-lg font-medium">
+                        🇺🇸 美国商事法 (UCC)
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-100 text-slate-700 border border-slate-200/80 px-2.5 py-0.5 rounded-lg font-medium">
+                        🇩🇪 德国联邦法
+                      </span>
+                    )}
+                    {getStatusBadge(item.status)}
+                  </div>
+
+                  {/* 案件题名 */}
+                  <h3 className="text-base font-bold text-slate-900 group-hover:text-slate-800 transition-colors leading-snug line-clamp-1">
+                    {item.title}
+                  </h3>
+
+                  {/* 案情副信息 */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <span className="font-medium text-slate-700">{item.contract_type}</span>
+                    <span className="text-slate-300">·</span>
+                    <span>{item.contract_date ? `订立日 ${item.contract_date}` : '合同订立日未定'}</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="font-semibold text-slate-700">{item.issues_count} 项争议焦点</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="text-slate-400 font-mono">更新于 {item.updated_at?.slice(0, 10)}</span>
+                  </div>
                 </div>
-                <h4 className="text-xs font-medium text-zinc-800 mt-0.5 group-hover:text-zinc-950 truncate">
-                  {item.title}
-                </h4>
-                <div className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-2">
-                  <span>更新于 {item.updated_at}</span>
-                  <span>·</span>
-                  <span>{item.issues_count} 个争点</span>
+
+                {/* 右侧操作按钮 */}
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectCase(item.case_id, 'analysis');
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-xl transition-all shadow-2xs hover:border-slate-300 active:scale-[0.98] cursor-pointer"
+                  >
+                    案情深度分析
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectCase(item.case_id, 'review');
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs shadow-blue-500/25 cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
+                  >
+                    <span>查阅双语报告</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleDelete(item.case_id, e)}
+                    title="删除案件"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-
-              <div className="col-span-2 text-xs">
-                <span className="font-medium text-zinc-800 block truncate">
-                  {item.contract_type}
-                </span>
-                <span className="text-zinc-400 text-[11px] font-mono mt-0.5 block">
-                  {item.contract_date || '未定'}
-                </span>
-              </div>
-
-              <div className="col-span-2">{getStatusBadge(item.status)}</div>
-
-              <div className="col-span-2 text-xs">
-                <div className="flex items-center gap-1.5 text-zinc-600 font-mono text-[11px]">
-                  <Database className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  <span className="truncate">{item.snapshot_id}</span>
-                </div>
-                <span className="text-[10px] text-zinc-400 block mt-0.5">固定只读快照</span>
-              </div>
-
-              <div className="col-span-2 flex items-center justify-end gap-1.5">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectCase(item.case_id, 'analysis');
-                  }}
-                  className="px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-md transition-colors duration-150"
-                >
-                  案情分析
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectCase(item.case_id, 'review');
-                  }}
-                  className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-150 flex items-center gap-1 shadow-2xs"
-                >
-                  审阅报告
-                </button>
-                <button
-                  onClick={(e) => handleDelete(item.case_id, e)}
-                  title="彻底删除案件"
-                  className="p-1 text-zinc-400 hover:text-rose-600 rounded-md hover:bg-zinc-100 transition-colors duration-150"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

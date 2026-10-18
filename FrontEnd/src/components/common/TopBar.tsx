@@ -13,6 +13,8 @@ import {
   ExternalLink,
   PanelLeft,
   PanelLeftClose,
+  Compass,
+  Play,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -31,6 +33,8 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
     isDrawerOpen,
     setIsDrawerOpen,
     showToast,
+    openPipelineAnimation,
+    openCaseEntryModal,
   } = useApp();
 
   const [caseMenuOpen, setCaseMenuOpen] = useState(false);
@@ -47,11 +51,12 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
   }, []);
 
   const viewTitles: Record<ActiveView, string> = {
-    cases: '案件台账列表',
-    entry: 'S0 案情要素与法源参数录入',
-    workspace: 'Agent 工作台 (Multi-Agent 协同流与法律追问)',
-    review: '双语查明报告与审阅留痕 (解释二规范)',
-    analysis: '案情深度分析 (争点·要件·证据链·类案)',
+    home: '查明 Agent 主页',
+    cases: '历史查明案件',
+    entry: '新建案件查明',
+    workspace: '查明Agent咨询',
+    review: '双语查明报告与审阅留痕',
+    analysis: '案情深度分析',
     dashboard: '可核验计数校验仪表盘',
     search: '域外法律法规与判例检索库',
     verification: '当事人外国法材料核验',
@@ -74,22 +79,23 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
 
   return (
     <header className="h-12 glass-panel border-b border-zinc-200/80 px-5 flex items-center justify-between gap-4 sticky top-0 z-20 shadow-xs">
-      {/* 左侧：边栏折叠开关、面包屑与案件即时切换器 */}
+      {/* 左侧：面包屑与案件即时切换器 */}
       <div className="flex items-center gap-2 text-xs text-zinc-500 min-w-0">
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            title={collapsed ? '展开侧边栏' : '收起侧边栏'}
-            className="p-1.5 -ml-1.5 mr-0.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/80 transition-colors duration-150 cursor-pointer shrink-0"
-          >
-            {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-          </button>
-        )}
+
+        <button
+          type="button"
+          onClick={() => setCurrentView('home')}
+          className="hover:text-zinc-900 transition-colors duration-150 flex items-center gap-1.5 shrink-0 font-medium cursor-pointer"
+          title="返回查明 Agent 主页"
+        >
+          <Compass className="w-3.5 h-3.5 text-blue-600" />
+          <span>主页</span>
+        </button>
+        <span className="text-zinc-300">/</span>
 
         <button
           onClick={() => setCurrentView('cases')}
-          className="hover:text-zinc-900 transition-colors duration-150 flex items-center gap-1.5 shrink-0 font-medium"
+          className="hover:text-zinc-900 transition-colors duration-150 flex items-center gap-1.5 shrink-0 font-medium cursor-pointer"
         >
           <FolderOpen className="w-3.5 h-3.5" />
           <span>案件</span>
@@ -149,9 +155,9 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
                 <button
                   onClick={() => {
                     setCaseMenuOpen(false);
-                    setCurrentView('entry');
+                    openCaseEntryModal();
                   }}
-                  className="w-full text-center py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors shadow-xs"
+                  className="w-full text-center py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors shadow-xs cursor-pointer active:scale-[0.98]"
                 >
                   + 新建查明案情
                 </button>
@@ -167,6 +173,7 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
       </div>
 
       {/* 右侧：状态指示与快捷操作 */}
+      {/* 右侧：状态指示与快捷操作 */}
       <div className="flex items-center gap-2.5 shrink-0 text-xs">
         {/* 工作流运行中动态指示 */}
         {currentCase?.status === 'running' && (
@@ -175,11 +182,6 @@ export const TopBar: React.FC<TopBarProps> = ({ collapsed, onToggleCollapse }) =
             <span>工作流执行中 · {currentCase.current_node || '推理推进'}</span>
           </span>
         )}
-
-        {/* 角色标识徽标 */}
-        <span className="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded-md border border-zinc-200 text-[11px] font-medium hidden sm:inline-flex items-center gap-1">
-          {roleLabels[role]}
-        </span>
 
         {/* 权威法源抽屉开关按钮 (Drawer Trigger) */}
         <button

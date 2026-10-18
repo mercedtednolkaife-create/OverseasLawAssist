@@ -8,8 +8,8 @@ interface GradeBadgeProps {
 export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm' }) => {
   const configs = {
     A: {
-      label: 'A级 · 官方原文',
-      desc: '源自现行法源直接逐字引用，经V1-V3严格校验',
+      label: 'A级 · 官方条文',
+      desc: '源自现行有效法典条文，经官方数据库严格校验',
       color: 'text-zinc-900 border-zinc-300 bg-zinc-100',
     },
     B: {
@@ -20,7 +20,7 @@ export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm'
     C: {
       label: 'C级 · 待复核',
       desc: '证据相关度偏低或属二手转引材料，建议重点复核',
-      color: 'text-amber-800 border-amber-200 bg-amber-50/70',
+      color: 'text-zinc-700 border-zinc-200 bg-zinc-100',
     },
     D: {
       label: 'D级 · 仅供线索',
@@ -44,7 +44,7 @@ export const GradeBadge: React.FC<GradeBadgeProps> = ({ grade = 'A', size = 'sm'
     >
       <span className="font-bold">{safeGrade}</span>
       <span className="font-sans normal-case tracking-normal text-zinc-500 text-[10px]">
-        {safeGrade === 'A' ? '逐字引注' : safeGrade === 'B' ? '核验转译' : safeGrade === 'C' ? '待复核' : '仅线索'}
+        {safeGrade === 'A' ? '官方现行' : safeGrade === 'B' ? '核验转译' : safeGrade === 'C' ? '待复核' : '仅线索'}
       </span>
     </span>
   );

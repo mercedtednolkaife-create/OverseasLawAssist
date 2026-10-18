@@ -37,10 +37,16 @@ export const CisgGateModal: React.FC<CisgGateModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl border border-zinc-200 max-w-lg w-full p-6 shadow-xl space-y-5">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md antialiased apple-modal-backdrop"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[28px] border border-black/[0.08] max-w-lg w-full p-6 sm:p-7 shadow-[0_24px_64px_rgba(0,0,0,0.18)] space-y-5 apple-modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div>

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp, ActiveView } from '../../context/AppContext';
 import { UserRole } from '../../types/lawAgent';
 import {
-  Scale,
+  Layers,
   FolderOpen,
   FileSearch,
   Activity,
@@ -20,6 +20,7 @@ import {
   Check,
   BookOpen,
   Bot,
+  Compass,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
     casesList,
     loadCase,
     showToast,
+    openCaseEntryModal,
   } = useApp();
 
   const [casesMenuOpen, setCasesMenuOpen] = useState(false);
@@ -75,10 +77,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
     items: Array<{ id: ActiveView; label: string; icon: React.ReactNode; hidden?: boolean }>;
   }> = [
     {
+      title: '主导航',
+      items: [
+        { id: 'home', label: '查明 Agent 主页', icon: <Compass className="w-4 h-4" /> },
+      ],
+    },
+    {
       title: '查明工作台',
       items: [
-        { id: 'workspace', label: 'Agent 工作台', icon: <Bot className="w-4 h-4" /> },
-        { id: 'analysis', label: '案情深度分析', icon: <Scale className="w-4 h-4" /> },
+        { id: 'analysis', label: '案情深度分析', icon: <Layers className="w-4 h-4" /> },
+        { id: 'workspace', label: '查明Agent咨询', icon: <Bot className="w-4 h-4" /> },
         { id: 'review', label: '双语报告与核验', icon: <FileSearch className="w-4 h-4" /> },
         { id: 'dashboard', label: '可核验计数仪表盘', icon: <Activity className="w-4 h-4" /> },
       ],
@@ -102,19 +110,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
       ],
     },
     {
-      title: '台账管理',
-      items: [{ id: 'cases', label: '案件台账列表', icon: <FolderOpen className="w-4 h-4" /> }],
+      title: '历史与归档',
+      items: [{ id: 'cases', label: '历史查明案件', icon: <FolderOpen className="w-4 h-4" /> }],
     },
   ];
 
   return (
     <aside
-      className={`h-screen sticky top-0 bg-[#0c162d] border-r border-blue-950/60 flex flex-col justify-between transition-[width] duration-200 ease-in-out z-30 select-none overflow-x-hidden ${
+      className={`h-[calc(100vh-1.5rem)] sticky top-3 my-3 ml-3 rounded-[28px] apple-sidebar-panel flex flex-col justify-between transition-[width] duration-200 ease-in-out z-30 select-none overflow-x-hidden ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* 顶部区域：品牌、折叠按钮与新建操作 */}
-      <div className="p-3 space-y-3">
+      <div className="p-3.5 space-y-3">
         {/* 品牌与折叠操作区 */}
         {collapsed ? (
           <div className="flex flex-col items-center justify-center py-1">
@@ -122,27 +130,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
               type="button"
               onClick={onToggleCollapse}
               title="展开侧边栏"
-              className="w-10 h-10 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 border border-blue-400/30 text-blue-200 hover:text-white flex items-center justify-center transition-colors duration-150 shadow-xs group active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 flex items-center justify-center transition-colors duration-150 shadow-2xs group active:scale-95 cursor-pointer"
             >
-              <PanelLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <PanelLeft className="w-4 h-4 group-hover:scale-110 transition-transform" />
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2 px-1 py-1">
             <div
-              onClick={() => setCurrentView('cases')}
+              onClick={() => setCurrentView('home')}
               className="flex items-center gap-2.5 cursor-pointer group min-w-0"
-              title="返回案件台账"
+              title="返回查明 Agent 主页"
             >
-              <div className="w-7 h-7 rounded-lg bg-blue-600/30 border border-blue-400/20 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Scale className="w-4 h-4 text-blue-200" />
+              <div className="w-7 h-7 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <ShieldCheck className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-white tracking-tight block truncate">
+                <span className="text-xs font-bold text-slate-900 tracking-tight block truncate group-hover:text-blue-600 transition-colors">
                   涉外法查明Agent
                 </span>
-                <span className="text-[10px] text-blue-300/50 font-mono block -mt-0.5">
-                  v0.7 · 域外法查明辅助 Agent
+                <span className="text-[10px] text-slate-400 font-mono block -mt-0.5">
+                  v2.0 · Apple VIA 架构
                 </span>
               </div>
             </div>
@@ -151,32 +159,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
               type="button"
               onClick={onToggleCollapse}
               title="收起侧边栏"
-              className="p-1.5 rounded-lg text-blue-300/60 hover:text-white hover:bg-white/10 transition-colors duration-150 shrink-0 cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors duration-150 shrink-0 cursor-pointer"
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* 新建查明按钮 (Apple 风格蓝色强调胶囊) */}
+        {/* 新建查明按钮 (Apple 风格蓝色胶囊) */}
         {!collapsed ? (
           <button
-            onClick={() => setCurrentView('entry')}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors duration-150 shadow-sm shadow-blue-500/25 border border-blue-400/30 active:scale-[0.99] cursor-pointer"
+            onClick={openCaseEntryModal}
+            className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all duration-150 shadow-sm shadow-blue-500/25 active:scale-[0.98] cursor-pointer"
           >
             <span className="flex items-center gap-2">
               <Plus className="w-3.5 h-3.5" />
               <span>新建查明案情</span>
             </span>
-            <kbd className="text-[10px] bg-blue-700/80 text-blue-100 px-1.5 py-0.2 rounded font-mono border border-blue-500/30">
+            <kbd className="text-[10px] bg-blue-700 text-blue-100 px-1.5 py-0.2 rounded-md font-mono border border-blue-500/40">
               S0
             </kbd>
           </button>
         ) : (
           <button
-            onClick={() => setCurrentView('entry')}
+            onClick={openCaseEntryModal}
             title="新建查明案情 (S0)"
-            className="w-10 h-10 mx-auto flex items-center justify-center text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-colors duration-150 shadow-sm shadow-blue-500/25 border border-blue-400/30 cursor-pointer active:scale-95"
+            className="w-10 h-10 mx-auto flex items-center justify-center text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-all duration-150 shadow-sm shadow-blue-500/25 cursor-pointer active:scale-95"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -187,21 +195,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
           <div className="relative" ref={dropdownRef}>
             <div
               onClick={() => setCasesMenuOpen(!casesMenuOpen)}
-              className="px-2.5 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-xs cursor-pointer transition-all duration-150 backdrop-blur-md"
+              className="px-3 py-2 bg-slate-100/70 hover:bg-slate-100 rounded-xl border border-slate-200/60 text-xs cursor-pointer transition-all duration-150"
             >
-              <div className="flex items-center justify-between text-[10px] text-blue-300/60 mb-0.5">
+              <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
                 <span>当前活跃案件</span>
-                <span className="font-mono text-[10px] text-blue-300/70">{currentCase.mode}</span>
+                <span className="font-mono text-[10px] text-slate-500">{currentCase.mode}</span>
               </div>
-              <div className="font-medium text-white flex items-center justify-between">
+              <div className="font-semibold text-slate-900 flex items-center justify-between">
                 <span className="truncate font-mono">{currentCase.case_id}</span>
-                <ChevronDown className="w-3 h-3 text-blue-300/60 shrink-0 ml-1" />
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 ml-1" />
               </div>
             </div>
 
             {casesMenuOpen && (
-              <div className="absolute left-0 mt-1 w-full bg-[#0d1833] rounded-xl border border-blue-800/40 shadow-2xl py-1.5 z-50 text-xs backdrop-blur-xl">
-                <div className="px-2.5 py-1 text-[10px] font-semibold text-blue-300/60 uppercase tracking-wider border-b border-blue-900/40">
+              <div className="absolute left-0 mt-1 w-full bg-white/95 rounded-2xl border border-slate-200/80 shadow-xl py-1.5 z-50 text-xs backdrop-blur-xl">
+                <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   快速切换案件
                 </div>
                 <div className="max-h-48 overflow-y-auto py-1">
@@ -221,17 +229,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
                             showToast(`已切换至案件 ${c.case_id}`, 'info');
                           }
                         }}
-                        className={`px-2.5 py-1.5 flex items-center justify-between gap-1.5 hover:bg-white/5 cursor-pointer transition-colors ${
-                          isSelected ? 'bg-blue-600/30 font-semibold text-white border-l-2 border-blue-400' : 'text-slate-300'
+                        className={`px-3 py-2 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-blue-50 font-semibold text-blue-700 border-l-2 border-blue-600' : 'text-slate-700'
                         }`}
                       >
                         <div className="min-w-0">
-                          <span className="font-mono text-xs block truncate text-slate-100">{c.case_id}</span>
-                          <span className="text-[10px] text-blue-200/50 truncate block">
+                          <span className="font-mono text-xs block truncate text-slate-900">{c.case_id}</span>
+                          <span className="text-[10px] text-slate-400 truncate block">
                             {c.title}
                           </span>
                         </div>
-                        {isSelected && <Check className="w-3 h-3 text-blue-400 shrink-0" />}
+                        {isSelected && <Check className="w-3 h-3 text-blue-600 shrink-0" />}
                       </div>
                     );
                   })}
@@ -243,11 +251,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
       </div>
 
       {/* 中部导航区：信息架构 */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
         {navGroups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-1">
             {!collapsed && (
-              <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-blue-300/40">
+              <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 {group.title}
               </div>
             )}
@@ -261,13 +269,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
                       key={item.id}
                       onClick={() => setCurrentView(item.id)}
                       title={collapsed ? item.label : undefined}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-150 cursor-pointer ${
                         isActive
-                          ? 'bg-blue-600 text-white font-semibold shadow-xs shadow-blue-500/30'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
+                          ? 'bg-blue-600 text-white font-semibold shadow-xs shadow-blue-500/25'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                       } ${collapsed ? 'justify-center px-0' : ''}`}
                     >
-                      <span className={isActive ? 'text-white' : 'text-blue-200/60'}>
+                      <span className={isActive ? 'text-white' : 'text-slate-400'}>
                         {item.icon}
                       </span>
                       {!collapsed && <span className="truncate">{item.label}</span>}
@@ -280,22 +288,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
       </div>
 
       {/* 底部系统与角色控制面板 */}
-      <div className="p-3 border-t border-blue-900/40 bg-[#091122]/60 space-y-2.5">
+      <div className="p-3 border-t border-slate-100 bg-slate-50/50 space-y-2.5">
         {/* 角色切换 (Segmented Control - Apple 磨砂风格) */}
         {!collapsed ? (
           <div>
-            <div className="text-[10px] font-semibold text-blue-300/40 uppercase tracking-wider px-1 mb-1">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-1">
               操作角色
             </div>
-            <div className="grid grid-cols-3 gap-1 p-0.5 bg-black/30 border border-white/10 rounded-lg text-[11px] backdrop-blur-md">
+            <div className="grid grid-cols-3 gap-1 p-0.5 bg-slate-200/70 rounded-xl text-[11px]">
               {(['practitioner', 'judicial', 'public'] as UserRole[]).map((r) => (
                 <button
                   key={r}
                   onClick={() => setRole(r)}
-                  className={`py-1 rounded-md transition-all duration-150 text-center font-medium ${
+                  className={`py-1 rounded-lg transition-all duration-150 text-center font-medium cursor-pointer ${
                     role === r
-                      ? 'bg-white/20 text-white shadow-xs font-semibold border border-white/15 backdrop-blur-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                   title={roleConfigs[r].name}
                 >
@@ -306,7 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
           </div>
         ) : (
           <div className="flex justify-center" title={`当前角色：${roleConfigs[role].name}`}>
-            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-blue-200">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
               {roleConfigs[role].icon}
             </div>
           </div>
@@ -314,15 +322,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
 
         {/* 快照与合规指示 */}
         {!collapsed ? (
-          <div className="px-1 text-[11px] text-blue-300/40 font-mono flex items-center justify-between">
+          <div className="px-1 text-[11px] text-slate-400 font-mono flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <Database className="w-3 h-3 text-blue-300/40" />
+              <Database className="w-3 h-3 text-slate-400" />
               <span className="truncate max-w-[120px]">
                 {currentCase?.snapshot_id || '20261008-gii'}
               </span>
             </span>
-            <span className="text-[10px] bg-white/5 px-1 py-0.2 rounded border border-white/10 text-blue-200/60">
-              WAL只读
+            <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200/60 font-sans font-medium">
+              在线
             </span>
           </div>
         ) : null}
@@ -330,4 +338,3 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse })
     </aside>
   );
 };
-

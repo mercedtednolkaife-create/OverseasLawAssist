@@ -384,11 +384,16 @@ class StateDBManager:
         conn = self.get_connection()
         try:
             cur = conn.cursor()
-            cur.execute("SELECT state_json FROM cases WHERE case_id = ?", (case_id,))
+            cur.execute("SELECT title, state_json FROM cases WHERE case_id = ?", (case_id,))
             row = cur.fetchone()
             if not row or not row["state_json"]:
                 return None
-            return CaseState.model_validate_json(row["state_json"])
+            state = CaseState.model_validate_json(row["state_json"])
+            if row["title"]:
+                state.title = row["title"]
+                if state.meta:
+                    state.meta.title = row["title"]
+            return state
         finally:
             conn.close()
 

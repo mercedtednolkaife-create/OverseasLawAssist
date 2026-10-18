@@ -15,6 +15,8 @@ export interface CaseMeta {
   choice_of_law?: string; // 选法条款 (如：德国法 / 美国纽约州法UCC)
   cisg_excluded?: boolean | null; // null 表示未确认，触发 CISG 闸门
   both_merchants?: boolean;       // 是否均为商人 (触发 HGB § 377 / UCC § 2-104)
+  title?: string;
+  signing_date?: string;
 }
 
 export interface Claim {
@@ -186,6 +188,7 @@ export type CaseWorkflowStatus =
 
 export interface CaseState {
   case_id: string;
+  title?: string;
   snapshot_id: string;
   mode: RunMode;
   facts_zh: string;
@@ -392,7 +395,7 @@ export interface RedTeamDefense {
 
 export interface StrategicAssessment {
   case_id: string;
-  pivotal_factors: string[]; // 胜败摇摆关键变量 / 心证分水岭
+  pivotal_factors: string[]; // 胜败摇摆关键变量 / 裁判审查关键焦点
   outcome_branches: OutcomeBranch[];
   red_team_defenses: RedTeamDefense[];
   actionable_checklist: string[];

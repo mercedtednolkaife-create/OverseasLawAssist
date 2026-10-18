@@ -1,51 +1,34 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { lawAgentApi } from '../../api/lawAgentApi';
-import { AgentWorkflowResponse, AgentWorkflowStep, UserRole, SavedInsight } from '../../types/lawAgent';
+import { SavedInsight } from '../../types/lawAgent';
 import {
   Bot,
-  Sparkles,
   Send,
   RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  ShieldCheck,
-  CheckCircle2,
-  Cpu,
-  Database,
-  Scale,
-  FileText,
-  Clock,
-  Briefcase,
-  Gavel,
-  Globe,
   Copy,
   Check,
   BookOpen,
-  Layers,
-  ArrowRight,
-  Flame,
   BookmarkPlus,
   FolderArchive,
+  X,
+  SlidersHorizontal,
+  ChevronRight,
+  ShieldCheck,
   Swords,
-  Maximize2,
-  Zap,
 } from 'lucide-react';
-import { AgentOrchestrationModal } from './AgentOrchestrationModal';
 
 export const AgentWorkspaceView: React.FC = () => {
-  const { currentCaseId, currentCase, role, openLawModal, showToast, refreshCurrentCase, setCurrentView } = useApp();
+  const {
+    currentCaseId,
+    currentCase,
+    role,
+    openLawModal,
+    showToast,
+    refreshCurrentCase,
+  } = useApp();
 
   const case_id = currentCaseId || 'C001';
-  const [workflow, setWorkflow] = useState<AgentWorkflowResponse | null>(null);
-  const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(true);
-  const [isOrchestrationOpen, setIsOrchestrationOpen] = useState(false);
-
-  // 详情底稿展开状态 (默认全部收起)
-  const [expandedLogSteps, setExpandedLogSteps] = useState<Record<string, boolean>>({});
-
-  // 争议焦点看板展开/折叠状态 (默认展开)
-  const [isIssuesPanelExpanded, setIsIssuesPanelExpanded] = useState<boolean>(true);
 
   // 对抗模式切换 (neutral | red_teaming)
   const [chatMode, setChatMode] = useState<'neutral' | 'red_teaming'>('neutral');
@@ -54,10 +37,11 @@ export const AgentWorkspaceView: React.FC = () => {
   const [savedInsights, setSavedInsights] = useState<SavedInsight[]>([]);
   const [savingInsightIndex, setSavingInsightIndex] = useState<number | null>(null);
   const [savedInsightIndices, setSavedInsightIndices] = useState<Set<number>>(new Set());
-  const [showInsightsDrawer, setShowInsightsDrawer] = useState<boolean>(false);
 
-  // Chatbot 追问状态
-  const [chatRoleView, setChatRoleView] = useState<UserRole>(role);
+  // 案件背景与争议要素抽屉 (默认折叠以保持聊天界面纯净专注)
+  const [isContextDrawerOpen, setIsContextDrawerOpen] = useState<boolean>(false);
+
+  // 对话列表
   const [messages, setMessages] = useState<
     Array<{
       role: 'user' | 'assistant';
@@ -72,7 +56,9 @@ export const AgentWorkspaceView: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // 修复：消息滚动容器引用与初次挂载标记（彻底杜绝切换页面时默认滑到底部）
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isUS =
@@ -111,97 +97,92 @@ export const AgentWorkspaceView: React.FC = () => {
     };
   }, [currentCase, isUS]);
 
-  // 快捷 Prompt 预设胶囊 (根据中立 vs 红方反击动态切换)
-  const quickPromptsNeutral = isUS
-    ? [
-        {
-          title: 'UCC § 2-607 合理期间抗辩',
-          prompt: '美方主张依据 UCC § 2-607(3)(a) 已逾期失权，我方如何结合第二巡回法院判例举证复杂设备合理检验期间？',
-        },
-        {
-          title: '28 U.S.C. § 1782 跨境取证',
-          prompt: '能否依据 28 U.S.C. § 1782 向美国联邦法院申请单方动议，强制美方移交机台设计与出厂内部测试报告？',
-        },
-        {
-          title: 'UCC § 2-207 格式条款之战',
-          prompt: '美方发票背面印有 AS IS 免责条款，依据 UCC § 2-207 规则是否并入双方合同？',
-        },
-        {
-          title: '商业和解与 ADR 筹码',
-          prompt: '在涉美跨国商事和解与调解中，如何利用美国高昂的 Discovery 取证成本促成美方退让？',
-        },
-      ]
-    : [
-        {
-          title: 'HGB § 377 抗辩路径',
-          prompt: '德方主张依据德国商法典 (HGB) § 377 条已逾期失权，我方如何举证隐蔽瑕疵以实现有效抗辩？',
-        },
-        {
-          title: '败诉风险点剖析',
-          prompt: '如果法庭全面采信德国法，本案原告在举证责任 (Beweislast) 与时效上核心败诉风险点有哪些？',
-        },
-        {
-          title: '专家出庭质证焦点',
-          prompt: '若申请德国法出庭专家提供咨询，围绕 BGH 判例对合理检验期的界定，应如何设计质证提纲？',
-        },
-        {
-          title: '商业和解谈判筹码',
-          prompt: '在涉外商业和解与替代性争议解决 (ADR) 中，我方可以利用哪些法律与诉讼成本筹码促成退让？',
-        },
-      ];
+  // 快捷 Prompt 预设胶囊（精炼规范，去除多余 emoji）
+  const quickPromptsNeutral = useMemo(
+    () =>
+      isUS
+        ? [
+            {
+              title: 'UCC § 2-607 检验期抗辩',
+              prompt: '美方主张依据 UCC § 2-607(3)(a) 已逾期失权，我方如何结合第二巡回法院判例举证复杂设备合理检验期间？',
+            },
+            {
+              title: '28 U.S.C. § 1782 跨境取证',
+              prompt: '能否依据 28 U.S.C. § 1782 向美国联邦法院申请单方动议，强制美方移交机台设计与出厂内部测试报告？',
+            },
+            {
+              title: 'UCC § 2-207 格式条款之战',
+              prompt: '美方发票背面印有 AS IS 免责条款，依据 UCC § 2-207 规则是否并入双方合同？',
+            },
+            {
+              title: '商业和解与 ADR 筹码',
+              prompt: '在涉美跨国商事和解与调解中，如何利用美国高昂的 Discovery 取证成本促成美方退让？',
+            },
+          ]
+        : [
+            {
+              title: 'HGB § 377 抗辩路径',
+              prompt: '德方主张依据德国商法典 (HGB) § 377 条已逾期失权，我方如何举证隐蔽瑕疵以实现有效抗辩？',
+            },
+            {
+              title: '败诉风险点剖析',
+              prompt: '如果法庭全面采信德国法，本案原告在举证责任 (Beweislast) 与时效上核心败诉风险点有哪些？',
+            },
+            {
+              title: '专家出庭质证焦点',
+              prompt: '若申请德国法出庭专家提供咨询，围绕 BGH 判例对合理检验期的界定，应如何设计质证提纲？',
+            },
+            {
+              title: '商业和解谈判筹码',
+              prompt: '在涉外商业和解与替代性争议解决 (ADR) 中，我方可以利用哪些法律与诉讼成本筹码促成退让？',
+            },
+          ],
+    [isUS]
+  );
 
-  const quickPromptsRedTeam = isUS
-    ? [
-        {
-          title: '🔥 UCC § 2-607 瑕疵通知失权',
-          prompt: '美方大律师如何援引 UCC § 2-607(3)(a) 主张买方试运行 23 天构成不合理迟延，依法剥夺全部救济权？',
-        },
-        {
-          title: '🔥 AS IS 默示担保免责击溃',
-          prompt: '美方如何以订单背书的免责条款主张已有效排除 UCC § 2-314 适销性担保？',
-        },
-        {
-          title: '🔥 间接损失排除条款阻断',
-          prompt: '美方如何援引商事买卖排除 Consequential Damages 约定，阻断我方主张产线停机损失？',
-        },
-        {
-          title: '🔥 纽约州法先例压制',
-          prompt: '美方大律师会援引哪些第二巡回法院判例主张商事实体不得以复杂性为由延长检验通知期？',
-        },
-      ]
-    : [
-        {
-          title: '🔥 HGB § 377 失权击溃',
-          prompt: '德方如何以德国商法典 (HGB) § 377 条买方逾期检验为由，要求法院直接驳回我方全部物之瑕疵担保救济权？',
-        },
-        {
-          title: '🔥 涉外质检证据挑刺',
-          prompt: '我方质检报告仅由国内单方出具且未经验证封样，德方大律师会从哪些形式要件与证明力角度猛烈发难？',
-        },
-        {
-          title: '🔥 试生产默示受领',
-          prompt: '德方若主张涉案设备投入试运行已构成德国法下的默示受领（Abnahme），如何击溃我方瑕疵主张？',
-        },
-        {
-          title: '🔥 期间缩短判例压制',
-          prompt: '援引德国联邦最高法院 (BGH) 判例，德方会如何主张对于高精设备合理检验期不应超过 7 个工作日？',
-        },
-      ];
+  const quickPromptsRedTeam = useMemo(
+    () =>
+      isUS
+        ? [
+            {
+              title: 'UCC § 2-607 瑕疵通知失权',
+              prompt: '美方大律师如何援引 UCC § 2-607(3)(a) 主张买方试运行 23 天构成不合理迟延，依法剥夺全部救济权？',
+            },
+            {
+              title: 'AS IS 默示担保免责击溃',
+              prompt: '美方如何以订单背书的免责条款主张已有效排除 UCC § 2-314 适销性担保？',
+            },
+            {
+              title: '间接损失排除条款阻断',
+              prompt: '美方如何援引商事买卖排除 Consequential Damages 约定，阻断我方主张产线停机损失？',
+            },
+            {
+              title: '第二巡回法院先例压制',
+              prompt: '美方大律师会援引哪些第二巡回法院判例主张商事实体不得以复杂性为由延长检验通知期？',
+            },
+          ]
+        : [
+            {
+              title: 'HGB § 377 失权击溃',
+              prompt: '德方如何以德国商法典 (HGB) § 377 条买方逾期检验为由，要求法院直接驳回我方全部物之瑕疵担保救济权？',
+            },
+            {
+              title: '涉外质检证据挑刺',
+              prompt: '我方质检报告仅由国内单方出具且未经验证封样，德方大律师会从哪些形式要件与证明力角度猛烈发难？',
+            },
+            {
+              title: '试生产默示受领',
+              prompt: '德方若主张涉案设备投入试运行已构成德国法下的默示受领（Abnahme），如何击溃我方瑕疵主张？',
+            },
+            {
+              title: '期间缩短判例压制',
+              prompt: '援引德国联邦最高法院 (BGH) 判例，德方会如何主张对于高精设备合理检验期不应超过 7 个工作日？',
+            },
+          ],
+    [isUS]
+  );
 
   const quickPrompts = chatMode === 'red_teaming' ? quickPromptsRedTeam : quickPromptsNeutral;
-
-  // 加载 Multi-Agent 工作流轨迹
-  const loadWorkflow = async () => {
-    setLoadingWorkflow(true);
-    try {
-      const data = await lawAgentApi.getAgentWorkflow(case_id);
-      setWorkflow(data);
-    } catch (err: any) {
-      showToast(err.message || '获取工作流数据失败', 'error');
-    } finally {
-      setLoadingWorkflow(false);
-    }
-  };
 
   // 加载已沉淀的研判备忘
   const loadInsights = async () => {
@@ -213,95 +194,45 @@ export const AgentWorkspaceView: React.FC = () => {
     }
   };
 
-  // 动态研判当前工作流完成度
-  const isWorkflowCompleted = useMemo(() => {
-    if (!workflow || !workflow.steps || workflow.steps.length === 0) return false;
-    return workflow.steps.every((s) => ['completed', 'verified', 'delivered'].includes(s.status));
-  }, [workflow]);
-
-  const completedStepsCount = useMemo(() => {
-    if (!workflow || !workflow.steps) return 0;
-    return workflow.steps.filter((s) => ['completed', 'verified', 'delivered'].includes(s.status)).length;
-  }, [workflow]);
-
-  const runningStep = useMemo(() => {
-    if (!workflow || !workflow.steps) return null;
-    return workflow.steps.find((s) => s.status === 'running') || null;
-  }, [workflow]);
-
   useEffect(() => {
-    let isMounted = true;
-    loadWorkflow();
     loadInsights();
-
-    // 动态步进轮询：未全部完成时每 1 秒拉取一次最新进展
-    const interval = setInterval(async () => {
-      if (!isMounted) return;
-      try {
-        const data = await lawAgentApi.getAgentWorkflow(case_id);
-        if (isMounted && data) {
-          setWorkflow(data);
-          const allDone =
-            data.steps &&
-            data.steps.every((s: any) =>
-              ['completed', 'verified', 'delivered'].includes(s.status)
-            );
-          if (allDone) {
-            clearInterval(interval);
-            await refreshCurrentCase();
-          }
-        }
-      } catch {
-        // silent
-      }
-    }, 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
   }, [case_id]);
 
+  // 初始化问候语
   useEffect(() => {
-    if (currentCase?.status === 'running') {
-      setMessages([
-        {
-          role: 'assistant',
-          content: isUS
-            ? `案件【${case_id}】正在执行 Multi-Agent 流式协同研判流水线。左侧正在逐节点抽取事实、检视准据法、检索 UCC 法条与联邦判例并进行要件涵摄推演。研判完成后，此处将自动为您开放交互式法律追问与【美方出庭反击】对抗演练。`
-            : `案件【${case_id}】正在执行 Multi-Agent 流式协同研判流水线。左侧正在逐节点抽取事实、检视准据法、检索德国民商法典与 BGH 判例并进行要件涵摄推演。研判完成后，此处将自动为您开放交互式法律追问与【德方出庭反击】对抗演练。`,
-          model: 'deepseek-v4.1-flash',
-          mode: 'neutral',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          statutes: [],
-        },
-      ]);
-    } else {
-      setMessages([
-        {
-          role: 'assistant',
-          content: isUS
-            ? `案件【${case_id}】争议焦点与法源已挂接就绪。请选择上方争议焦点点击追问，或切换【中立法理研判】与【美方出庭反击】开展对抗演练。我将结合 UCC 统一商法典与联邦先例展开推导。`
-            : `案件【${case_id}】争议焦点与法源已挂接就绪。请选择上方争议焦点点击追问，或切换【中立法理研判】与【德方出庭反击】开展对抗演练。我将结合德国现行法典与 BGH 判例展开推导。`,
-          model: 'deepseek-v4.1-flash',
-          mode: 'neutral',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          statutes: isUS ? ['UCC § 2-314', 'UCC § 2-607', '28 U.S.C. § 1782'] : ['BGB § 434', 'BGB § 437', 'HGB § 377'],
-        },
-      ]);
+    const defaultStatutes = isUS
+      ? ['UCC § 2-314', 'UCC § 2-607', '28 U.S.C. § 1782']
+      : ['BGB § 434', 'BGB § 437', 'HGB § 377'];
+
+    const greetingContent = isUS
+      ? `您好，我是本案【${case_id}】的域外法查明咨询 Agent。涉案争议焦点与美国统一商法典 (UCC) 及相关司法先例已关联就绪。您可以点击下方快捷问题、右侧要素争点，或切换【中立法理】与【美方律师反击】开展深度对抗演练。`
+      : `您好，我是本案【${case_id}】的域外法查明咨询 Agent。涉案争议焦点与德国联邦成文法典及 BGH 先例已关联就绪。您可以点击下方快捷问题、右侧要素争点，或切换【中立法理】与【德方律师反击】开展深度对抗演练。`;
+
+    setMessages([
+      {
+        role: 'assistant',
+        content: greetingContent,
+        model: 'qwen3.8-flash',
+        mode: 'neutral',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        statutes: defaultStatutes,
+      },
+    ]);
+  }, [case_id, isUS]);
+
+  // 修复滑动到底部：仅在用户发送消息或收到新回复时滚动内部容器，首次挂载或切页时不滚动
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [case_id, isUS, currentCase?.status]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending]);
-
-  const toggleStepLogExpand = (stepId: string) => {
-    setExpandedLogSteps((prev) => ({
-      ...prev,
-      [stepId]: !prev[stepId],
-    }));
-  };
+    if (chatScrollContainerRef.current) {
+      chatScrollContainerRef.current.scrollTo({
+        top: chatScrollContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages.length, sending]);
 
   const handleSend = async (contentToSend?: string) => {
     const text = (contentToSend || inputText).trim();
@@ -324,7 +255,7 @@ export const AgentWorkspaceView: React.FC = () => {
         content: m.content,
       }));
 
-      const res = await lawAgentApi.chatWithCase(case_id, chatPayload, chatRoleView, chatMode);
+      const res = await lawAgentApi.chatWithCase(case_id, chatPayload, role, chatMode);
 
       setMessages((prev) => [
         ...prev,
@@ -338,12 +269,12 @@ export const AgentWorkspaceView: React.FC = () => {
         },
       ]);
     } catch (err: any) {
-      showToast(err.message || '追问请求失败', 'error');
+      showToast(err.message || '咨询请求失败', 'error');
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: '很抱歉，追问处理出现异常，请稍后重试或检查后台服务状态。',
+          content: '抱歉，咨询处理出现异常，请检查后台服务连接状态后重试。',
           model: 'error',
           mode: chatMode,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -354,11 +285,11 @@ export const AgentWorkspaceView: React.FC = () => {
     }
   };
 
-  // 研判洞察成果一键沉淀至底稿
+  // 研判成果沉淀至底稿（简化为唯一直观动作）
   const handleSaveInsight = async (
     index: number,
     content: string,
-    category: 'memo' | 'trial_outline' | 'red_team_defense'
+    category: 'memo' | 'trial_outline' | 'red_team_defense' = 'memo'
   ) => {
     if (savingInsightIndex !== null) return;
     setSavingInsightIndex(index);
@@ -383,14 +314,7 @@ export const AgentWorkspaceView: React.FC = () => {
 
       setSavedInsights((prev) => [res, ...prev]);
       setSavedInsightIndices((prev) => new Set([...prev, index]));
-      showToast(
-        category === 'memo'
-          ? '已成功沉淀至【B 包实务备忘】'
-          : category === 'red_team_defense'
-          ? '已成功沉淀至【B 包出庭对抗防守要点】'
-          : '已成功沉淀至【B 包出庭专家质证提纲】',
-        'success'
-      );
+      showToast('已成功沉淀至实务研判底稿', 'success');
       await refreshCurrentCase();
     } catch (err: any) {
       showToast(err.message || '沉淀失败', 'error');
@@ -421,7 +345,7 @@ export const AgentWorkspaceView: React.FC = () => {
   const handleCopyMessage = (index: number, text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedIndex(index);
-      showToast('回复已复制至剪贴板', 'success');
+      showToast('已复制回复内容', 'success');
       setTimeout(() => setCopiedIndex(null), 2000);
     });
   };
@@ -430,7 +354,7 @@ export const AgentWorkspaceView: React.FC = () => {
     setMessages([
       {
         role: 'assistant',
-        content: `会话记录已重置。您可以重新选择上方争议焦点，或切换【中立法理】与【${isUS ? '美方出庭反击' : '德方出庭反击'}】提出新的法律追问。`,
+        content: `会话记录已重置。您可以重新选择快捷问题，或切换【中立法理】与【${isUS ? '美方律师反击' : '德方律师反击'}】提出新的法律追问。`,
         model: 'qwen3.8-flash',
         mode: chatMode,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -438,135 +362,45 @@ export const AgentWorkspaceView: React.FC = () => {
     ]);
   };
 
-  // 统一冷调蓝色系节点图标
-  const getStepIcon = (stepId: string) => {
-    switch (stepId) {
-      case 'extract':
-        return <Cpu className="w-3.5 h-3.5 text-blue-600" />;
-      case 'precheck':
-        return <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />;
-      case 'retrieval':
-        return <Database className="w-3.5 h-3.5 text-blue-600" />;
-      case 'subsumption':
-        return <Scale className="w-3.5 h-3.5 text-blue-600" />;
-      case 'red_team_strategist':
-        return <Swords className="w-3.5 h-3.5 text-blue-600" />;
-      case 'judge':
-        return <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />;
-      case 'drafter':
-        return <FileText className="w-3.5 h-3.5 text-blue-600" />;
-      default:
-        return <Bot className="w-3.5 h-3.5 text-blue-600" />;
-    }
-  };
-
-  interface MetricChipItem {
-    label: string;
-    value: string;
-    tone?: 'green' | 'yellow' | 'blue' | 'neutral';
-  }
-
-  // 提取精炼指标：字体保持黑色/深墨灰，浅色背景区分重点（浅绿通过/浅黄抗辩/浅蓝法源技术/浅灰中性）
-  const getStepMetricChips = (step: AgentWorkflowStep): MetricChipItem[] => {
-    switch (step.step_id) {
-      case 'extract':
-        return [
-          { label: '事实要素', value: '4 项事实', tone: 'neutral' },
-          { label: '权利诉求', value: '2 项主张', tone: 'neutral' },
-          { label: '主体身份', value: '双边商事实体', tone: 'blue' },
-        ];
-      case 'precheck':
-        return [
-          { label: '意思自治选法', value: isUS ? '适用美国商事法 (有效)' : '适用德国法 (有效)', tone: 'green' },
-          { label: '国际公约排查', value: 'CISG 已排除', tone: 'green' },
-          { label: '法域通道', value: isUS ? '美国商事及联邦法' : '德意志联邦民商法', tone: 'blue' },
-        ];
-      case 'retrieval':
-        return [
-          { label: '成文规范', value: isUS ? 'UCC Article 2 核心条文' : 'BGB / HGB 4 项条文', tone: 'blue' },
-          { label: isUS ? '司法先例' : '联邦判例', value: isUS ? '联邦巡回区先例 2 篇' : 'BGH 判例 2 篇', tone: 'blue' },
-          { label: '法源核验', value: '官方现行法典库比对', tone: 'neutral' },
-        ];
-      case 'subsumption':
-        return [
-          { label: '要件具备', value: isUS ? '2 项具备 (违约/品质未达标)' : '2 项具备 (合同效力/瑕疵存在)', tone: 'green' },
-          { label: '待查要件', value: isUS ? '1 项待查 (合理检验通知期)' : '1 项待查 (检验通知起算点)', tone: 'yellow' },
-          { label: isUS ? '美方抗辩' : '德方抗辩', value: isUS ? 'UCC § 2-607 逾期失权' : 'HGB § 377 逾期失权', tone: 'yellow' },
-        ];
-      case 'red_team_strategist':
-        return [
-          { label: '胜败推演', value: '3 组假定条件分支', tone: 'blue' },
-          { label: isUS ? '美方抗辩' : '德方抗辩', value: isUS ? '3 项美方致命抗辩' : '3 项德方致命抗辩', tone: 'yellow' },
-          { label: '反制与补证', value: '反制武器 + 补证清单', tone: 'green' },
-        ];
-      case 'judge':
-        return [
-          { label: '独立复核', value: '裁判 Agent (防线审查)', tone: 'blue' },
-          { label: '质检规则', value: '11 项质检全部通过', tone: 'green' },
-          { label: '法源真实性', value: '官方正文验真通过', tone: 'green' },
-        ];
-      case 'drafter':
-        return [
-          { label: '双语论据', value: isUS ? '6 组中美对照命题' : '6 组中德对照命题', tone: 'blue' },
-          { label: '报告标准', value: '符合涉外司法查明规范', tone: 'blue' },
-          { label: '成果交付', value: 'DOCX 报告已就绪', tone: 'green' },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  // Agent 业务角色徽标 (替代原底层技术模型名称)
-  const getAgentRoleBadge = (stepId: string) => {
-    const roleBadges: Record<string, { label: string; tone: string }> = {
-      extract: { label: '事实抽取 Agent', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-      precheck: { label: '准据法前检 Agent', tone: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-      retrieval: { label: '法源检索 Agent', tone: 'bg-sky-50 text-sky-700 border-sky-200' },
-      subsumption: { label: '要件涵摄 Agent', tone: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-      red_team_strategist: { label: '策略推演与红队 Agent', tone: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-      judge: { label: '裁判 Agent', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold' },
-      drafter: { label: '双语起草 Agent', tone: 'bg-purple-50 text-purple-700 border-purple-200' },
-    };
-    const current = roleBadges[stepId] || { label: '协同 Agent', tone: 'bg-zinc-100 text-zinc-700 border-zinc-200' };
-    return (
-      <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${current.tone}`}>
-        {current.label}
-      </span>
-    );
-  };
-
-  // 格式化文本中的 Markdown 标题与粗体
+  // 格式化文本中的 Markdown 标题与要点
   const renderFormattedContent = (content: string) => {
     const lines = content.split('\n');
     return (
-      <div className="space-y-2 text-xs md:text-sm text-zinc-800 leading-relaxed">
+      <div className="space-y-2 text-sm text-slate-800 leading-relaxed font-sans">
         {lines.map((line, i) => {
           if (line.startsWith('### ')) {
             return (
-              <h4 key={i} className="text-xs md:text-sm font-bold text-zinc-900 mt-2 mb-1">
+              <h4 key={i} className="text-sm font-bold text-slate-900 mt-3 mb-1">
                 {line.replace('### ', '')}
               </h4>
             );
           }
+          if (line.startsWith('## ')) {
+            return (
+              <h3 key={i} className="text-base font-bold text-slate-900 mt-3 mb-1">
+                {line.replace('## ', '')}
+              </h3>
+            );
+          }
           if (line.startsWith('**') && line.endsWith('**')) {
             return (
-              <p key={i} className="font-semibold text-zinc-900">
+              <p key={i} className="font-semibold text-slate-900">
                 {line.replace(/\*\*/g, '')}
               </p>
             );
           }
           if (line.startsWith('- ') || line.startsWith('* ')) {
             return (
-              <div key={i} className="flex items-start gap-1.5 pl-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 mt-1.5 shrink-0" />
+              <div key={i} className="flex items-start gap-2 pl-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
                 <span>{line.substring(2)}</span>
               </div>
             );
           }
           if (/^\d+\.\s/.test(line)) {
             return (
-              <div key={i} className="flex items-start gap-1.5 pl-2">
-                <span className="font-mono text-xs font-semibold text-zinc-500 shrink-0">
+              <div key={i} className="flex items-start gap-2 pl-2">
+                <span className="font-mono text-xs font-semibold text-slate-500 shrink-0 mt-0.5">
                   {line.match(/^\d+\./)?.[0]}
                 </span>
                 <span>{line.replace(/^\d+\.\s/, '')}</span>
@@ -574,7 +408,7 @@ export const AgentWorkspaceView: React.FC = () => {
             );
           }
           if (line.trim() === '') {
-            return <div key={i} className="h-1" />;
+            return <div key={i} className="h-1.5" />;
           }
           return <p key={i}>{line}</p>;
         })}
@@ -583,543 +417,145 @@ export const AgentWorkspaceView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1720px] mx-auto space-y-4">
-      {/* 顶部标题栏：与其它功能页蓝色主题保持一致 */}
-      <div className="bg-white rounded-xl border border-zinc-200/90 p-4 px-6 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center font-bold">
-            <Bot className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                {case_id}
-              </span>
-              <h1 className="text-sm md:text-base font-semibold text-zinc-900 tracking-tight">
-                Agent 工作台
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start md:self-auto text-xs">
-          <button
-            type="button"
-            onClick={() => setIsOrchestrationOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-blue-700 border border-blue-200/90 rounded-lg transition-all shadow-2xs font-medium cursor-pointer"
-            title="打开全屏 Multi-Agent 协同研判流程"
-          >
-            <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
-            <span>全屏协同监视</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={loadWorkflow}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-lg transition-colors shadow-2xs font-medium cursor-pointer"
-            title="刷新流水线状态"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 ${loadingWorkflow ? 'animate-spin' : ''}`} />
-            <span>刷新</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 主工作区左右两栏分栏 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* ========================================================================= */}
-        {/* 左侧：Multi-Agent 协作流观察窗 (5 栏宽) - 统一蓝色主题与浅色重点标识 */}
-        {/* ========================================================================= */}
-        <div className="lg:col-span-5 space-y-3">
-          {/* 顶端全景流水线步进微条 */}
-          <div className="bg-white rounded-xl border border-zinc-200/90 shadow-xs p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-600" />
-                <h2 className="text-xs font-bold text-zinc-900 tracking-tight">
-                  Multi-Agent 协作流水线
-                </h2>
-              </div>
-              {isWorkflowCompleted ? (
-                <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-600">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>7 阶段已就绪</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-[11px] font-mono text-blue-600">
-                  <RotateCcw className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                  <span>{completedStepsCount} / 7 阶段推进中</span>
-                </div>
-              )}
-            </div>
-
-            {/* 蓝色系步进节点条，文字保持沉稳深墨黑 */}
-            <div className="grid grid-cols-7 gap-1 pt-1 border-t border-zinc-100">
-              {[
-                { label: '抽取', id: 'extract' },
-                { label: '前检', id: 'precheck' },
-                { label: '检索', id: 'retrieval' },
-                { label: '涵摄', id: 'subsumption' },
-                { label: '推演', id: 'red_team_strategist' },
-                { label: '起草', id: 'drafter' },
-                { label: '裁判', id: 'judge' },
-              ].map((s, idx) => {
-                const stepObj = workflow?.steps.find((st) => st.step_id === s.id);
-                const stepStatus = stepObj?.status || 'pending';
-                const isStepCompleted = ['completed', 'verified', 'delivered'].includes(stepStatus);
-                const isStepRunning = stepStatus === 'running';
-
-                let cardStyle = 'bg-zinc-50 border-zinc-200/70 text-zinc-400 opacity-60';
-                let circleStyle = 'bg-zinc-300 text-zinc-600';
-
-                if (isStepCompleted) {
-                  cardStyle = 'bg-blue-50/70 border-blue-300 text-blue-900 shadow-2xs';
-                  circleStyle = 'bg-blue-600 text-white';
-                } else if (isStepRunning) {
-                  cardStyle = 'bg-blue-100/90 border-blue-500 ring-2 ring-blue-300/50 text-blue-950 font-bold';
-                  circleStyle = 'bg-blue-600 text-white animate-pulse';
-                }
-
-                return (
-                  <div
-                    key={s.id}
-                    className={`flex flex-col items-center p-1 rounded-lg border text-center transition-all duration-200 ${cardStyle}`}
-                  >
-                    <span className={`w-4 h-4 rounded-full font-mono text-[9px] font-bold flex items-center justify-center ${circleStyle}`}>
-                      {isStepCompleted ? '✓' : idx + 1}
-                    </span>
-                    <span className="text-[10px] font-medium mt-0.5 truncate max-w-full">
-                      {s.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 节点卡片列表：仅显示已完成与进行中的步骤，待执行步骤不显示 */}
-          <div className="space-y-2 relative before:absolute before:top-4 before:bottom-4 before:left-5 before:w-0.5 before:bg-blue-100">
-            {workflow?.steps
-              ?.filter((step) => step.status !== 'pending')
-              .map((step, index) => {
-                const globalStepIndex = (workflow?.steps.findIndex((s) => s.step_id === step.step_id) ?? index) + 1;
-                const isLogExpanded = !!expandedLogSteps[step.step_id];
-                const metricChips = getStepMetricChips(step);
-                const isCompleted = ['completed', 'verified', 'delivered'].includes(step.status);
-                const isRunning = step.status === 'running';
-
-                // 进行中步骤：显示精炼动效胶囊，无需大面积空白展开
-                if (isRunning) {
-                  return (
-                    <div
-                      key={step.step_id}
-                      className="rounded-xl border border-blue-400 bg-blue-50/40 shadow-xs overflow-hidden ml-1 pl-2 relative"
-                    >
-                      <div className="p-3 pr-3.5 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg border bg-blue-600 text-white border-blue-600 flex items-center justify-center shrink-0">
-                              {getStepIcon(step.step_id)}
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-900">
-                              {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
-                            <RotateCcw className="w-3 h-3 animate-spin" />
-                            <span>进行中</span>
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-700 font-medium bg-white/80 p-2 rounded-lg border border-blue-100">
-                          {step.outputs_summary || '正在执行多维法理研判...'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={step.step_id}
-                    className="rounded-xl border border-zinc-200 bg-white hover:border-zinc-300 shadow-2xs overflow-hidden transition-all ml-1 pl-2 relative"
-                  >
-                    <div className="p-3 pr-3.5 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg border bg-blue-50 border-blue-200/80 flex items-center justify-center shrink-0">
-                            {getStepIcon(step.step_id)}
-                          </div>
-                          <span className="text-xs font-semibold text-zinc-900">
-                            {globalStepIndex}. {step.name.replace(/ Agent$/, '')}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0 text-zinc-400 text-xs">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          {step.duration_ms > 0 && (
-                            <span className="font-mono text-[11px]">
-                              {(step.duration_ms / 1000).toFixed(1)}s
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 结构化产出简述 (纯文本排版，去除琐碎小标签) */}
-                      <p className="text-xs text-zinc-600 leading-relaxed pt-0.5">
-                        {step.outputs_summary || metricChips.map((chip) => `${chip.label}: ${chip.value}`).join(' · ')}
-                      </p>
-
-                      {/* 卡片底栏: 仅按需展开底稿日志按钮 */}
-                      <div className="pt-1 border-t border-zinc-100 flex items-center justify-end text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => toggleStepLogExpand(step.step_id)}
-                          className="text-[10px] text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-0.5 transition-colors cursor-pointer"
-                        >
-                          <span>{isLogExpanded ? '收起底稿' : '执行底稿'}</span>
-                          {isLogExpanded ? (
-                            <ChevronUp className="w-3 h-3" />
-                          ) : (
-                            <ChevronDown className="w-3 h-3" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                  {/* 按需展开的底稿数据 (默认折叠) */}
-                  {isLogExpanded && (
-                    <div className="p-3 bg-zinc-50 border-t border-zinc-200/80 space-y-2 text-xs">
-                      <div>
-                        <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider block mb-0.5">
-                          输入数据概要:
-                        </span>
-                        <p className="text-[11px] text-zinc-700 bg-white p-2 rounded border border-zinc-200 leading-relaxed font-mono">
-                          {step.inputs_summary}
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider block mb-0.5">
-                          结构化输出字典:
-                        </span>
-                        <div className="bg-white p-2 rounded border border-zinc-200 font-mono text-[10px] text-zinc-600 overflow-x-auto space-y-0.5">
-                          {Object.entries(step.details).map(([k, v]) => (
-                            <div key={k} className="flex items-start gap-1.5">
-                              <span className="text-zinc-400 font-semibold">{k}:</span>
-                              <span className="text-zinc-800">
-                                {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 右侧：法律 Copilot 智能追问助手 (7 栏宽) */}
-        {/* ========================================================================= */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-zinc-200/90 shadow-xs flex flex-col h-[820px] overflow-hidden">
-          {/* Chat 顶部状态条 */}
-          <div className="p-3 px-5 border-b border-zinc-100 bg-zinc-50/70 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+    <div className="flex-1 flex h-full bg-[#F6F8FA] relative overflow-hidden min-w-0">
+      {/* 核心主会话区域 (居中流式布局) */}
+      <div className="flex-1 flex flex-col h-full min-w-0">
+        {/* 顶部极简导航与控制栏：对齐 Apple Bento 视觉规范 */}
+        <div className="h-14 border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0 z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
               <Bot className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-semibold text-zinc-900">
-                法律 Copilot 智能追问助手
-              </span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-50 text-blue-700 border border-blue-200 font-mono font-medium">
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                查明Agent咨询
+              </h1>
+              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200/70 shrink-0">
                 {case_id}
               </span>
             </div>
+          </div>
 
-            {/* 研判模式切换 + 角色视角 + 清空历史 */}
-            <div className="flex items-center gap-2">
-              {/* 红方反击 vs 中立法理模式切换 */}
-              <div className="flex items-center gap-0.5 bg-zinc-200/60 p-0.5 rounded-lg text-xs">
-                <button
-                  type="button"
-                  onClick={() => setChatMode('neutral')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                    chatMode === 'neutral'
-                      ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                  title="中立法理研判（法官/中立专家视角）"
-                >
-                  <Scale className="w-3 h-3 text-blue-600" />
-                  <span>中立法理</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChatMode('red_teaming')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                    chatMode === 'red_teaming'
-                      ? 'bg-amber-50 text-zinc-900 border border-amber-300 shadow-2xs font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                  title={isUS ? "美方出庭反击（模拟美方资深出庭律师对抗质证）" : "德方出庭反击（模拟德国资深商事大律师对抗挑刺）"}
-                >
-                  <Flame className="w-3 h-3 text-amber-600" />
-                  <span>{isUS ? '美方出庭反击' : '德方出庭反击'}</span>
-                </button>
-              </div>
-
-              {/* 视角切换 */}
-              <div className="hidden sm:flex items-center gap-1 bg-zinc-200/60 p-0.5 rounded-lg text-xs">
-                <button
-                  type="button"
-                  onClick={() => setChatRoleView('judicial')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    chatRoleView === 'judicial'
-                      ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                  title="司法端视角"
-                >
-                  司法端
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChatRoleView('practitioner')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    chatRoleView === 'practitioner'
-                      ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                  title="实务端视角"
-                >
-                  实务端
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChatRoleView('public')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    chatRoleView === 'public'
-                      ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                  title="公共端视角"
-                >
-                  公共端
-                </button>
-              </div>
-
+          {/* 右侧操作区：研判模式切换、要素抽屉与重置 */}
+          <div className="flex items-center gap-2">
+            {/* 中立研判 vs 对抗模式切换 */}
+            <div className="flex items-center p-0.5 bg-slate-100/90 rounded-xl text-xs border border-slate-200/60">
               <button
                 type="button"
-                onClick={handleClearHistory}
-                className="text-xs text-zinc-400 hover:text-zinc-700 px-2 py-0.5 rounded hover:bg-zinc-100 transition-colors"
-                title="清空记录"
+                onClick={() => setChatMode('neutral')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                  chatMode === 'neutral'
+                    ? 'bg-white text-blue-600 shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="中立法理研判（法官/中立专家视角）"
               >
-                清空
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">中立法理</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatMode('red_teaming')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
+                  chatMode === 'red_teaming'
+                    ? 'bg-amber-500 text-white shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title={isUS ? '美方律师出庭反击（模拟对抗质证）' : '德方律师出庭反击（模拟对抗质证）'}
+              >
+                <Swords className="w-3.5 h-3.5" />
+                <span>{isUS ? '美方律师反击' : '德方律师反击'}</span>
               </button>
             </div>
-          </div>
 
-          {/* 
-            常驻「当前案件争议焦点与抗辩要点看板」
-            去除说教式操作文字，仅保留纯粹争点与提问入口
-          */}
-          <div className="border-b border-zinc-200/90 bg-white">
-            <div
-              onClick={() => setIsIssuesPanelExpanded(!isIssuesPanelExpanded)}
-              className="px-4 py-2 bg-zinc-50 hover:bg-zinc-100/80 cursor-pointer flex items-center justify-between text-xs transition-colors select-none"
+            {/* 案情要素抽屉开关 */}
+            <button
+              type="button"
+              onClick={() => setIsContextDrawerOpen(!isContextDrawerOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-150 cursor-pointer ${
+                isContextDrawerOpen
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs shadow-blue-500/20'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 shadow-2xs'
+              }`}
+              title="查看案件要素与争议焦点"
             >
-              <div className="flex items-center gap-2">
-                <Scale className="w-3.5 h-3.5 text-blue-600" />
-                <span className="font-semibold text-zinc-900">
-                  争议焦点与抗辩
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">案情要素</span>
+              {caseContext.issues.length > 0 && (
+                <span
+                  className={`w-4 h-4 rounded-full text-[10px] font-mono flex items-center justify-center font-bold ${
+                    isContextDrawerOpen ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {caseContext.issues.length}
                 </span>
-                <span className="text-zinc-400 font-mono text-[11px]">
-                  ({caseContext.issues.length})
-                </span>
-              </div>
+              )}
+            </button>
 
-              <div className="flex items-center gap-1.5 text-zinc-400">
-                <span className="text-[10px] text-zinc-500">
-                  {isIssuesPanelExpanded ? '收起' : '展开'}
-                </span>
-                {isIssuesPanelExpanded ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </div>
-            </div>
-
-            {/* 看板详情展开区 */}
-            {isIssuesPanelExpanded && (
-              <div className="p-3.5 px-4 space-y-2.5 text-xs bg-white border-t border-zinc-100">
-                {/* 争议焦点列表 */}
-                <div className="space-y-1.5">
-                  <div className="space-y-1.5">
-                    {caseContext.issues.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-zinc-400 bg-zinc-50 rounded-lg border border-zinc-200">
-                        {isWorkflowCompleted ? '本案未录入特定争议焦点' : '流水线分析中...'}
-                      </div>
-                    ) : (
-                      caseContext.issues.map((iss, idx) => (
-                        <div
-                          key={iss.issue_id || idx}
-                          className="p-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 flex items-center justify-between gap-2 transition-colors"
-                        >
-                          <div className="flex items-start gap-1.5 min-w-0">
-                            <span className="font-mono text-zinc-500 text-[11px] font-semibold shrink-0 mt-0.5">
-                              {idx + 1}.
-                            </span>
-                            <span className="text-zinc-800 text-[11px] leading-relaxed line-clamp-2">
-                              {iss.text_zh}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectIssueToPrompt(iss.text_zh)}
-                            disabled={!isWorkflowCompleted}
-                            className="px-2 py-1 rounded bg-white hover:bg-zinc-800 hover:text-white text-zinc-700 border border-zinc-200 text-[10px] font-medium shrink-0 transition-colors shadow-2xs flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={isWorkflowCompleted ? '针对此争点生成提问' : '流水线执行中，暂不可追问'}
-                          >
-                            <span>针对追问</span>
-                            <ArrowRight className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* 核心请求权基础与抗辩防线 */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-zinc-100 text-[11px]">
-                  <div className="p-2 rounded bg-zinc-50 border border-zinc-200/70">
-                    <span className="text-zinc-500 font-medium block text-[10px]">
-                      原告实体请求权基础:
-                    </span>
-                    <span className="font-semibold text-zinc-800">
-                      {caseContext.claimBasis}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded bg-zinc-50 border border-zinc-200/70">
-                    <span className="text-zinc-500 font-medium block text-[10px]">
-                      {isUS ? '美方' : '德方'}核心抗辩与失权防线:
-                    </span>
-                    <span className="font-semibold text-zinc-800">
-                      {caseContext.defenseCore}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 已沉淀的研判成果与备忘抽屉 */}
-                {savedInsights.length > 0 && (
-                  <div className="pt-2 border-t border-zinc-100 space-y-1.5">
-                    <div
-                      onClick={() => setShowInsightsDrawer(!showInsightsDrawer)}
-                      className="flex items-center justify-between cursor-pointer text-zinc-600 hover:text-zinc-900 select-none py-0.5"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <FolderArchive className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="text-[11px] font-semibold text-zinc-800">
-                          已沉淀探索底稿 ({savedInsights.length} 条)
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-zinc-400">
-                        {showInsightsDrawer ? '收起' : '查看'}
-                      </span>
-                    </div>
-
-                    {showInsightsDrawer && (
-                      <div className="space-y-1.5 pt-1 max-h-40 overflow-y-auto no-scrollbar">
-                        {savedInsights.map((ins) => (
-                          <div
-                            key={ins.insight_id}
-                            className="p-2 rounded-lg bg-zinc-50 border border-zinc-200/80 text-[11px] space-y-1"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-medium text-zinc-600">
-                                {ins.category === 'red_team_defense'
-                                  ? '出庭防守要点'
-                                  : ins.category === 'trial_outline'
-                                  ? '出庭质证提纲'
-                                  : '实务备忘'}
-                              </span>
-                              <span className="text-[9px] font-mono text-zinc-400">
-                                {ins.insight_id}
-                              </span>
-                            </div>
-                            <p className="font-medium text-zinc-800 line-clamp-1">{ins.title}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* 清空会话历史 */}
+            <button
+              type="button"
+              onClick={handleClearHistory}
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              title="重置会话"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
           </div>
+        </div>
 
-          {/* 红方反击模式微条 */}
-          {chatMode === 'red_teaming' && (
-            <div className="p-2 px-4 bg-amber-50/90 border-b border-amber-200/80 text-xs text-zinc-800 flex items-center gap-2">
-              <Flame className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span className="text-[11px] font-medium">
-                对抗演练模式：模拟对方出庭律师质证视角
-              </span>
-            </div>
-          )}
-
-          {/* 消息对话列表区 */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-zinc-50/30">
+        {/* 消息对话滚动流 (居中流式排布) */}
+        <div ref={chatScrollContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 min-h-0">
+          <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg, index) => {
               const isUser = msg.role === 'user';
               return (
                 <div
                   key={index}
-                  className={`flex items-start gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}
+                  className={`flex items-start gap-3.5 ${isUser ? 'flex-row-reverse' : ''}`}
                 >
                   <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 shadow-2xs ${
+                    className={`w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 shadow-xs ${
                       isUser
-                        ? 'bg-zinc-800 text-white font-medium text-xs'
+                        ? 'bg-blue-600 text-white shadow-blue-500/20 font-semibold text-xs'
                         : msg.mode === 'red_teaming'
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-blue-600 text-white'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-100 border border-slate-200/80 text-blue-600'
                     }`}
                   >
                     {isUser ? (
                       '我'
                     ) : msg.mode === 'red_teaming' ? (
-                      <Flame className="w-4 h-4" />
+                      <Swords className="w-4 h-4" />
                     ) : (
-                      <Bot className="w-4 h-4" />
+                      <Bot className="w-4 h-4 text-blue-600" />
                     )}
                   </div>
 
-                  <div className={`max-w-[88%] space-y-1.5 ${isUser ? 'items-end' : ''}`}>
+                  <div className={`space-y-1.5 max-w-[85%] ${isUser ? 'items-end' : ''}`}>
                     <div
-                      className={`flex items-center gap-2 text-[10px] text-zinc-400 ${
+                      className={`flex items-center gap-2 text-[11px] text-slate-400 ${
                         isUser ? 'justify-end' : ''
                       }`}
                     >
-                      <span className="font-medium text-zinc-600">
+                      <span className="font-medium text-slate-600">
                         {isUser
-                          ? '我'
+                          ? '提问'
                           : msg.mode === 'red_teaming'
-                          ? (isUS ? '美方对抗律师' : '德方对抗律师')
-                          : '研判分析'}
+                          ? (isUS ? '美方律师反击' : '德方律师反击')
+                          : '查明Agent'}
                       </span>
                       <span>·</span>
-                      <span>{msg.timestamp}</span>
+                      <span className="font-mono">{msg.timestamp}</span>
                     </div>
 
                     <div
-                      className={`p-3.5 rounded-xl border text-xs md:text-sm shadow-2xs ${
+                      className={`p-4 sm:p-5 rounded-2xl text-sm leading-relaxed shadow-2xs ${
                         isUser
-                          ? 'bg-zinc-900 text-white border-zinc-900 rounded-tr-none'
+                          ? 'bg-blue-600 text-white rounded-tr-xs shadow-xs shadow-blue-500/20'
                           : msg.mode === 'red_teaming'
-                          ? 'bg-white text-zinc-800 border-amber-200/90 rounded-tl-none ring-1 ring-amber-100'
-                          : 'bg-white text-zinc-800 border-zinc-200/90 rounded-tl-none'
+                          ? 'bg-white text-slate-800 border border-amber-200/90 rounded-tl-xs ring-1 ring-amber-100/60'
+                          : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-xs'
                       }`}
                     >
                       {isUser ? (
@@ -1130,20 +566,20 @@ export const AgentWorkspaceView: React.FC = () => {
                     </div>
 
                     {!isUser && (
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {msg.statutes && msg.statutes.length > 0 && (
                             <>
-                              <span className="text-[10px] text-zinc-400">援引法条:</span>
+                              <span className="text-[11px] text-slate-400">援引法源:</span>
                               {msg.statutes.map((s, si) => (
                                 <button
                                   key={si}
                                   type="button"
                                   onClick={() => openLawModal('E1')}
-                                  className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-50/60 hover:bg-blue-100 text-zinc-800 border border-blue-200/70 transition-colors flex items-center gap-1"
+                                  className="px-2.5 py-0.5 rounded-lg text-xs font-mono bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/70 transition-colors flex items-center gap-1.5 cursor-pointer"
                                   title="在弹窗中查看法条原文"
                                 >
-                                  <BookOpen className="w-2.5 h-2.5 text-blue-600" />
+                                  <BookOpen className="w-3 h-3 text-slate-400" />
                                   <span>{s}</span>
                                 </button>
                               ))}
@@ -1151,58 +587,39 @@ export const AgentWorkspaceView: React.FC = () => {
                           )}
                         </div>
 
-                        {/* 一键沉淀成果至分析底稿 + 复制按钮 */}
+                        {/* 复制与成果沉淀至底稿（精简为双动作） */}
                         <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveInsight(index, msg.content, 'memo')}
-                            disabled={savingInsightIndex === index}
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors flex items-center gap-1 shadow-2xs ${
-                              savedInsightIndices.has(index)
-                                ? 'bg-emerald-50 text-zinc-900 border-emerald-300'
-                                : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200'
-                            }`}
-                            title="沉淀为 B 包实务咨询备忘底稿"
-                          >
-                            <BookmarkPlus className="w-2.5 h-2.5 text-zinc-600" />
-                            <span>{savedInsightIndices.has(index) ? '已沉淀备忘' : '沉淀为备忘'}</span>
-                          </button>
-
                           <button
                             type="button"
                             onClick={() =>
                               handleSaveInsight(
                                 index,
                                 msg.content,
-                                msg.mode === 'red_teaming' ? 'red_team_defense' : 'trial_outline'
+                                msg.mode === 'red_teaming' ? 'red_team_defense' : 'memo'
                               )
                             }
                             disabled={savingInsightIndex === index}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 transition-colors flex items-center gap-1 shadow-2xs"
-                            title={
-                              msg.mode === 'red_teaming'
-                                ? '沉淀为出庭对抗防守要点'
-                                : '沉淀为出庭专家质证提纲'
-                            }
+                            className={`px-2.5 py-1 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${
+                              savedInsightIndices.has(index)
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 shadow-2xs'
+                            }`}
+                            title="沉淀至实务研判底稿"
                           >
-                            {msg.mode === 'red_teaming' ? (
-                              <ShieldCheck className="w-2.5 h-2.5 text-amber-600" />
-                            ) : (
-                              <FileText className="w-2.5 h-2.5 text-blue-600" />
-                            )}
-                            <span>{msg.mode === 'red_teaming' ? '沉淀防守要点' : '沉淀质证提纲'}</span>
+                            <BookmarkPlus className="w-3 h-3" />
+                            <span>{savedInsightIndices.has(index) ? '已沉淀底稿' : '沉淀至底稿'}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(index, msg.content)}
-                            className="text-[11px] text-zinc-400 hover:text-zinc-600 flex items-center gap-1 transition-colors px-1"
+                            className="px-2.5 py-1 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
                             title="复制回复"
                           >
                             {copiedIndex === index ? (
                               <Check className="w-3 h-3 text-emerald-600" />
                             ) : (
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-3 h-3 text-slate-400" />
                             )}
                             <span>{copiedIndex === index ? '已复制' : '复制'}</span>
                           </button>
@@ -1214,165 +631,213 @@ export const AgentWorkspaceView: React.FC = () => {
               );
             })}
 
+            {/* 推理生成中状态 (呼吸微动效) */}
             {sending && (
-              <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-start gap-3.5 animate-in fade-in duration-300">
                 <div
-                  className={`w-8 h-8 rounded-xl text-white flex items-center justify-center shrink-0 shadow-md ${
-                    chatMode === 'red_teaming'
-                      ? 'bg-gradient-to-tr from-rose-600 to-amber-600 shadow-rose-500/20'
-                      : 'bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-blue-500/20'
+                  className={`w-8 h-8 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-xs ${
+                    chatMode === 'red_teaming' ? 'bg-amber-500' : 'bg-blue-600'
                   }`}
                 >
-                  {chatMode === 'red_teaming' ? (
-                    <Flame className="w-4 h-4 animate-bounce text-amber-200" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 animate-spin text-blue-200" />
-                  )}
+                  <Bot className="w-4 h-4 text-white animate-pulse" />
                 </div>
-                <div className="flex-1 max-w-[90%] p-4 rounded-2xl rounded-tl-none glass-panel border border-blue-200/90 shadow-elevation-1 space-y-2.5 relative overflow-hidden">
-                  {/* 微光流动扫过效果 */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                      <span className="text-xs font-semibold gemini-gradient-text tracking-tight">
-                        {chatMode === 'red_teaming'
-                          ? (isUS ? '美方出庭对抗大律师 · 攻防推演中' : '德方出庭对抗大律师 · 攻防推演中')
-                          : 'DeepSeek / Gemini 法律研判引擎 · 要件涵摄中'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">
-                      LIVE INFERENCE
+                <div className="p-4 sm:p-5 rounded-2xl rounded-tl-xs bg-white border border-slate-200/90 shadow-2xs space-y-2 max-w-[85%]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+                    <span className="text-xs font-semibold text-slate-800">
+                      {chatMode === 'red_teaming'
+                        ? '正在模拟对方律师质证抗辩要点...'
+                        : '正在比对法源规范与先例涵摄...'}
                     </span>
                   </div>
-
-                  <p className="text-xs text-zinc-600 leading-relaxed">
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     {chatMode === 'red_teaming'
                       ? (isUS
-                          ? '正在分析买方检验通知时点，比对 UCC § 2-607(3)(a) 逾期失权判例与 AS IS 格式条款有效性...'
-                          : '正在分析买方通知时点与合同条款，比对 HGB § 377 商事检验失权要件与 BGH 隐蔽瑕疵判例...')
+                          ? '正在分析检验通知时点，比对 UCC § 2-607(3)(a) 逾期失权判例与格式条款有效性...'
+                          : '正在分析买方通知时点，比对 HGB § 377 商事检验失权要件与 BGH 隐蔽瑕疵判例...')
                       : (isUS
-                          ? '正在召回美国统一商法典 (UCC) § 2-314 适销性担保要件及 28 U.S.C. § 1782 跨境证据保全路径...'
-                          : '正在召回德意志联邦共和国民法典 (BGB) § 434, § 437 与商法典 (HGB) 规范，展开四段论涵摄推导...')}
+                          ? '正在检索美国统一商法典 (UCC) § 2-314 适销性担保及联邦证据法规范...'
+                          : '正在比对德国民法典 (BGB) § 434, § 437 与商法典规范，展开四段论涵摄推导...')}
                   </p>
-
-                  <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 text-[10px] text-zinc-400 font-mono">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                    <span>检索法源规范</span>
-                    <span>→</span>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                    <span>四段论归纳</span>
-                    <span>→</span>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                    <span>生成质证提纲</span>
-                  </div>
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
+        </div>
 
-          {/* 流水线未就绪时的状态横幅与锁定保护 */}
-          {!isWorkflowCompleted && (
-            <div className="p-2.5 px-4 bg-blue-50/95 border-t border-b border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-2">
-                <RotateCcw className="w-3.5 h-3.5 text-blue-600 animate-spin shrink-0" />
-                <span className="text-[11px]">
-                  <strong>协同流水线分析中 ({completedStepsCount}/7 阶段)</strong>：
-                  {runningStep ? `当前正在推进【${runningStep.name}】` : '各阶段 Agent 协同推理中'}，待全部阶段就绪后将自动解锁实时追问。
-                </span>
-              </div>
+        {/* 底部悬浮输入区域 (Apple Bento 风格输入舱) */}
+        <div className="border-t border-slate-200/80 bg-white/90 backdrop-blur-md px-4 sm:px-6 py-3.5 shrink-0 z-10">
+          <div className="max-w-3xl mx-auto space-y-2.5">
+            {/* 快捷追问胶囊横向微条 */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <span className="text-[11px] text-slate-400 font-medium shrink-0 flex items-center gap-1">
+                快捷追问:
+              </span>
+              {quickPrompts.map((qp, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSend(qp.prompt)}
+                  disabled={sending}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white hover:bg-blue-50/50 hover:border-blue-300 hover:text-blue-600 text-slate-700 border border-slate-200/80 shadow-2xs active:scale-95 transition-all duration-150 whitespace-nowrap shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {qp.title}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* 快捷提问胶囊栏 */}
-          <div className="px-4 py-2 border-t border-zinc-100 bg-white flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] text-zinc-400 font-medium shrink-0 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-blue-600" />
-              快捷追问:
-            </span>
-            {quickPrompts.map((qp, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleSend(qp.prompt)}
-                disabled={!isWorkflowCompleted || sending}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 transition-colors whitespace-nowrap shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {qp.title}
-              </button>
-            ))}
-          </div>
-
-          {/* 底部输入框 */}
-          <div className="p-3 border-t border-zinc-200 bg-white">
-            <div className="relative rounded-xl border border-zinc-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-50 transition-all bg-white overflow-hidden shadow-2xs">
+            {/* 输入框主卡片 */}
+            <div className="relative rounded-2xl border border-slate-200/90 bg-white shadow-2xs focus-within:border-blue-600/80 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all p-2.5 pl-4">
               <textarea
                 ref={inputRef}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={
-                  !isWorkflowCompleted
-                    ? `流水线正在分析中（第 ${completedStepsCount + 1} 阶段），待全部 7 阶段就绪后开启追问与对抗演练...`
-                    : chatMode === 'red_teaming'
-                    ? `【${isUS ? '美方' : '德方'}出庭反击】向对方律师提出案情论辩或接受挑刺审查（按 Enter 发送）...`
+                  chatMode === 'red_teaming'
+                    ? `【${isUS ? '美方律师' : '德方律师'}反击】向对方律师提出案情论辩或接受挑刺审查（按 Enter 发送）...`
                     : `针对案件【${case_id}】追问（按 Enter 发送，Shift+Enter 换行）...`
                 }
                 rows={2}
-                disabled={!isWorkflowCompleted || sending}
-                className="w-full p-2.5 pr-20 text-xs md:text-sm text-zinc-800 placeholder-zinc-400 resize-none outline-none focus:ring-0 disabled:bg-zinc-50 disabled:cursor-not-allowed"
+                disabled={sending}
+                className="w-full pr-14 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 resize-none outline-none focus:ring-0 disabled:bg-slate-50"
               />
 
-              <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+              <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleSend()}
-                  disabled={!isWorkflowCompleted || !inputText.trim() || sending}
-                  className={`px-3 py-1.5 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1 shadow-2xs disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed ${
-                    chatMode === 'red_teaming'
-                      ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                  disabled={!inputText.trim() || sending}
+                  className="w-8 h-8 rounded-xl text-white bg-blue-600 hover:bg-blue-700 active:scale-95 flex items-center justify-center transition-all shadow-xs shadow-blue-500/25 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  <span>发送</span>
-                  <Send className="w-3 h-3" />
+                  <Send className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400 px-1">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+              <span>
                 {chatMode === 'red_teaming' ? (
-                  <span className="text-amber-700 font-medium">🔥 对抗演练进行中</span>
+                  <span className="text-amber-600 font-medium">对抗演练模式 · 模拟出庭律师质证视角</span>
                 ) : (
-                  <span>客观中立法律推导模式</span>
+                  <span>四段论事实与要件涵摄推演模式</span>
                 )}
               </span>
-              <span>按 Enter 发送，Shift+Enter 换行</span>
+              <span>Enter 发送 · Shift+Enter 换行</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 全屏沉浸式 Multi-Agent 协同神经拓扑监视模态 */}
-      {isOrchestrationOpen && (
-        <AgentOrchestrationModal
-          isOpen={isOrchestrationOpen}
-          onClose={() => setIsOrchestrationOpen(false)}
-          caseId={case_id}
-          caseTitle={currentCase?.title}
-          jurisdiction={currentCase?.meta?.jurisdiction}
-          onEnterWorkspace={() => setIsOrchestrationOpen(false)}
-          onEnterAnalysis={() => {
-            setIsOrchestrationOpen(false);
-            setCurrentView('analysis');
-          }}
-        />
+      {/* 右侧：案情要素与争议焦点抽屉 (折叠式 Bento 架构) */}
+      {isContextDrawerOpen && (
+        <div className="w-80 sm:w-96 border-l border-slate-200/80 bg-white shadow-lg flex flex-col h-full z-20 animate-in slide-in-from-right duration-200">
+          <div className="p-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/70">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+              <h2 className="text-xs font-bold text-slate-900">案件要素与争议焦点</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsContextDrawerOpen(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+            {/* 准据法与公约 */}
+            <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">选定准据法</span>
+                <span className="font-semibold text-slate-800">{caseContext.choiceOfLaw}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60">
+                <span className="text-slate-500 font-medium">国际公约排除</span>
+                <span className="font-mono text-emerald-700 font-medium">{caseContext.cisgStatus}</span>
+              </div>
+            </div>
+
+            {/* 核心请求权与抗辩防线 */}
+            <div className="space-y-2.5">
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                <span className="text-slate-500 font-medium block">原告实体请求权基础:</span>
+                <p className="font-semibold text-slate-800 leading-relaxed">{caseContext.claimBasis}</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1">
+                <span className="text-slate-900 font-medium block flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="border-b border-amber-500 pb-0.5">对方核心抗辩与失权点:</span>
+                </span>
+                <p className="font-semibold text-slate-800 leading-relaxed">{caseContext.defenseCore}</p>
+              </div>
+            </div>
+
+            {/* 争议焦点列表 */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-900">争议焦点清单 ({caseContext.issues.length})</span>
+                <span className="text-[10px] text-slate-400">点击直接追问</span>
+              </div>
+
+              <div className="space-y-2">
+                {caseContext.issues.length === 0 ? (
+                  <p className="text-slate-400 text-center py-4">本案暂无特定争议焦点</p>
+                ) : (
+                  caseContext.issues.map((iss, idx) => (
+                    <div
+                      key={iss.issue_id || idx}
+                      onClick={() => handleSelectIssueToPrompt(iss.text_zh)}
+                      className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50/50 border border-slate-200/80 hover:border-blue-200/70 transition-all cursor-pointer group flex items-start justify-between gap-2"
+                    >
+                      <div className="space-y-1">
+                        <span className="font-mono text-[10px] text-slate-400 block">焦点 #{idx + 1}</span>
+                        <p className="text-xs text-slate-800 group-hover:text-blue-600 transition-colors leading-relaxed">
+                          {iss.text_zh}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 shrink-0 mt-1 transition-colors" />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 已沉淀研判备忘底稿 */}
+            {savedInsights.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 text-slate-900 font-semibold">
+                  <FolderArchive className="w-3.5 h-3.5 text-blue-600" />
+                  <span>已沉淀底稿 ({savedInsights.length})</span>
+                </div>
+
+                <div className="space-y-2">
+                  {savedInsights.map((ins) => (
+                    <div
+                      key={ins.insight_id}
+                      className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-slate-500">
+                          {ins.category === 'red_team_defense'
+                            ? '出庭防守要点'
+                            : ins.category === 'trial_outline'
+                            ? '出庭质证提纲'
+                            : '实务备忘'}
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-400">{ins.insight_id}</span>
+                      </div>
+                      <p className="font-medium text-slate-800 line-clamp-2 leading-relaxed">{ins.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 };
-

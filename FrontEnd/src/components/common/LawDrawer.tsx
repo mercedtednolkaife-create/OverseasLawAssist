@@ -9,7 +9,6 @@ import {
   Copy,
   Check,
   ShieldCheck,
-  Scale,
   FileText,
   Clock,
   Layers,
@@ -214,7 +213,7 @@ export const LawDrawer: React.FC<LawDrawerProps> = ({ variant = 'drawer', onClos
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Scale className="w-3 h-3 text-zinc-600" />
+                  <ShieldCheck className="w-3 h-3 text-zinc-600" />
                   {getLanguageLabel(evidence.ref_id)}
                 </label>
                 <div className="flex items-center gap-2">
@@ -360,7 +359,7 @@ export const LawDrawer: React.FC<LawDrawerProps> = ({ variant = 'drawer', onClos
               </div>
               <ul className="space-y-1.5 text-[11px] text-zinc-600 list-disc list-inside">
                 <li>已载明该条文在德意志联邦共和国法律体系中的现行有效状态</li>
-                <li>附官方德语全文与逐字引文比对校验码 (Exact Match V2)</li>
+                <li>附官方外文全文与逐字引文一致性核验记录</li>
                 <li>提供官方检索系统直接出处超链接及抓取时间戳</li>
                 <li>包含相关联邦最高法院典型适用判例及法律要旨解析</li>
               </ul>

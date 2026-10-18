@@ -2,25 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { lawAgentApi } from '../../api/lawAgentApi';
 import { NormOrCaseItem, SearchFilter } from '../../types/lawAgent';
-import { Search, Filter, ExternalLink, BookOpen, Layers, CheckCircle, Sidebar as SidebarIcon } from 'lucide-react';
+import { Search, ExternalLink, BookOpen } from 'lucide-react';
 
 export const NormSearchEngineView: React.FC = () => {
-  const { openLawModal, openLawDrawer, showToast } = useApp();
-  const [query, setQuery] = useState('');
+  const { openLawDrawer, showToast, searchDefaultKind, searchDefaultQuery } = useApp();
+  const [query, setQuery] = useState(searchDefaultQuery || '');
   const [selectedLaw, setSelectedLaw] = useState<string>('all');
-  const [selectedKind, setSelectedKind] = useState<'all' | 'norm' | 'case'>('all');
+  const [selectedKind, setSelectedKind] = useState<'all' | 'norm' | 'case'>(searchDefaultKind || 'all');
   const [items, setItems] = useState<NormOrCaseItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<NormOrCaseItem | null>(null);
 
-  const handleSearch = async () => {
+  // 同步外部/首页传入的检索参数
+  useEffect(() => {
+    if (searchDefaultQuery !== undefined) {
+      setQuery(searchDefaultQuery);
+    }
+  }, [searchDefaultQuery]);
+
+  useEffect(() => {
+    if (searchDefaultKind) {
+      setSelectedKind(searchDefaultKind);
+    }
+  }, [searchDefaultKind]);
+
+  const handleSearch = async (targetQuery?: string) => {
+    const q = targetQuery !== undefined ? targetQuery : query;
     setLoading(true);
     try {
       const filters: SearchFilter = {
         law: selectedLaw === 'all' ? undefined : selectedLaw,
         kind: selectedKind,
       };
-      const res = await lawAgentApi.searchNormsAndCases(query, filters);
+      const res = await lawAgentApi.searchNormsAndCases(q, filters);
       const safeItems = Array.isArray(res) ? res : [];
       setItems(safeItems);
       if (safeItems.length > 0 && !selectedItem) {
@@ -34,41 +48,45 @@ export const NormSearchEngineView: React.FC = () => {
   };
 
   useEffect(() => {
-    handleSearch();
-  }, [selectedLaw, selectedKind]);
+    handleSearch(query);
+  }, [selectedLaw, selectedKind, searchDefaultQuery]);
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+    <div className="apple-page-pane max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-6">
       {/* 搜索控制台 */}
-      <div className="bg-white rounded-xl border border-zinc-200 p-5 space-y-4 shadow-xs">
-        <div>
-          <h1 className="text-base font-bold text-zinc-900 tracking-tight flex items-center gap-2">
-            <Search className="w-4 h-4 text-blue-600" />
-            域外法律法规与判例检索库
-          </h1>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            权威法源直连美国统一商法典 (UCC/LII)、德国联邦法规 (GII)、最高院判例库与欧盟跨国公约，支持跨法域双语多维检索
+      <div className="apple-bento-card rounded-[28px] p-6 space-y-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+              <Search className="w-4 h-4 text-blue-600" />
+            </div>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+              域外法律法规与司法判例检索
+            </h1>
+          </div>
+          <p className="text-xs text-slate-500 pl-11.5">
+            直连美国统一商法典 (UCC)、特拉华公司法 (DGCL)、德国民商法典 (BGB/HGB) 与国际公约，支持跨法域双语多维检索
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2.5">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="输入条文如 'UCC § 2-314' 或 'BGB § 437'，或输入中英德关键词如 '适销性担保'、'物之瑕疵'、'Merchantability'..."
-              className="w-full pl-8.5 pr-3 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-zinc-400 bg-zinc-50/50 focus:bg-white"
+              placeholder="输入法条如 'UCC § 2-314' 或 'BGB § 437'，或输入中英德关键词如 '适销性担保'、'物之瑕疵'..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs border border-slate-200/90 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600/80 bg-slate-50/50 focus:bg-white transition-all text-slate-900 shadow-2xs"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <select
               value={selectedLaw}
               onChange={(e) => setSelectedLaw(e.target.value)}
-              className="px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-700 font-medium"
+              className="px-3 py-2.5 text-xs border border-slate-200/80 rounded-xl bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600/80 shadow-2xs cursor-pointer"
             >
               <option value="all">全部法典 (All Laws & Codes)</option>
               <optgroup label="🇺🇸 美国法域 (US Law)">
@@ -91,18 +109,18 @@ export const NormSearchEngineView: React.FC = () => {
             <select
               value={selectedKind}
               onChange={(e) => setSelectedKind(e.target.value as any)}
-              className="px-2.5 py-1.5 text-xs border border-zinc-200 rounded-lg bg-white text-zinc-700 font-medium"
+              className="px-3 py-2.5 text-xs border border-slate-200/80 rounded-xl bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600/80 shadow-2xs cursor-pointer"
             >
               <option value="all">全部类型 (法条与判例)</option>
-              <option value="norm">成文法规范 (Normen / Statutes)</option>
-              <option value="case">司法判例 (Cases / Precedents)</option>
+              <option value="norm">成文法条文 (Statutes)</option>
+              <option value="case">司法判例 (Cases)</option>
             </select>
 
             <button
-              onClick={handleSearch}
-              className="px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-150 shadow-xs shrink-0"
+              onClick={() => handleSearch()}
+              className="px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs shadow-blue-500/25 shrink-0 cursor-pointer active:scale-[0.98]"
             >
-              执行检索
+              检索
             </button>
           </div>
         </div>
@@ -111,38 +129,38 @@ export const NormSearchEngineView: React.FC = () => {
       {/* 结果分栏展示 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* 左侧列表 (5列) */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-zinc-200 divide-y divide-zinc-200 overflow-hidden shadow-xs">
-          <div className="px-4 py-2.5 bg-zinc-50 text-xs font-semibold text-zinc-500 flex items-center justify-between">
-            <span>命中条目 ({items.length})</span>
-            <span className="text-[11px] text-zinc-400 font-mono">BM25 + BGE-M3 融合排序</span>
+        <div className="lg:col-span-5 apple-bento-card rounded-[28px] divide-y divide-slate-100/80 overflow-hidden shadow-2xs">
+          <div className="px-5 py-3.5 bg-slate-50/80 text-xs font-semibold text-slate-600 flex items-center justify-between">
+            <span>检索结果 ({items.length})</span>
+            <span className="text-[11px] text-slate-400 font-mono">智能相关度排序</span>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-xs text-zinc-400">正在检索跨法域域外法源...</div>
+            <div className="p-12 text-center text-xs text-slate-400">正在检索跨法域法源...</div>
           ) : items.length === 0 ? (
-            <div className="p-12 text-center text-xs text-zinc-400">未检索到匹配的条文或判例</div>
+            <div className="p-12 text-center text-xs text-slate-400">未检索到匹配的条文或判例</div>
           ) : (
-            <div className="max-h-[680px] overflow-y-auto divide-y divide-zinc-100">
+            <div className="max-h-[680px] overflow-y-auto divide-y divide-slate-100">
               {items.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => setSelectedItem(item)}
-                  className={`p-3.5 text-xs cursor-pointer transition-colors duration-150 ${
+                  className={`p-4 text-xs cursor-pointer transition-all duration-150 ${
                     selectedItem?.id === item.id
-                      ? 'bg-zinc-100 font-medium text-zinc-900'
-                      : 'hover:bg-zinc-50 text-zinc-700'
+                      ? 'bg-blue-50/70 font-medium text-slate-900 border-l-2 border-blue-600'
+                      : 'hover:bg-slate-50/80 text-slate-700 border-l-2 border-transparent'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-bold text-zinc-900">{item.id}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-white border border-zinc-200 text-zinc-500 uppercase font-mono">
-                      {item.kind}
+                    <span className="font-mono font-bold text-slate-900">{item.id}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-slate-200/80 text-slate-600 uppercase font-mono font-medium">
+                      {item.kind === 'norm' ? '法条' : '判例'}
                     </span>
                   </div>
-                  <h4 className="text-xs font-medium text-zinc-800 mt-1 line-clamp-1">
+                  <h4 className="text-xs font-semibold text-slate-800 mt-1.5 line-clamp-1">
                     {item.title}
                   </h4>
-                  <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1">
+                  <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
                     {item.text_zh_machine}
                   </p>
                 </div>
@@ -152,78 +170,80 @@ export const NormSearchEngineView: React.FC = () => {
         </div>
 
         {/* 右侧条文详情 (7列) */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-zinc-200 p-6 space-y-5 shadow-xs sticky top-16">
+        <div className="lg:col-span-7 apple-bento-card rounded-[28px] p-6 space-y-5 sticky top-16">
           {selectedItem ? (
             <>
-              <div className="border-b border-zinc-200 pb-4 space-y-1">
+              <div className="border-b border-slate-100 pb-4 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold font-mono text-zinc-900">
+                  <span className="text-base font-bold font-mono text-slate-900">
                     {selectedItem.id}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => openLawDrawer(selectedItem.id.includes('434') ? 'E2' : selectedItem.id.includes('433') ? 'E1' : 'E3')}
-                      className="text-xs text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium transition-colors"
-                      title="在右侧对照窗中并排研读"
+                      className="text-xs text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200/90 px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-medium transition-all shadow-2xs hover:border-slate-300 active:scale-[0.98] cursor-pointer"
+                      title="在右侧抽屉中对照研读"
                     >
-                      <BookOpen className="w-3 h-3 text-blue-600" />
-                      <span>对照窗研读</span>
+                      <BookOpen className="w-3.5 h-3.5 text-slate-600" />
+                      <span>并排对照研读</span>
                     </button>
-                    <a
-                      href={selectedItem.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-zinc-500 hover:text-zinc-900 flex items-center gap-1 font-mono transition-colors"
-                    >
-                      官方出处
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    {selectedItem.source_url && (
+                      <a
+                        href={selectedItem.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 font-mono transition-colors"
+                      >
+                        官方出处
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
                   </div>
                 </div>
-                <h3 className="text-xs font-semibold text-zinc-800">
+                <h3 className="text-sm font-semibold text-slate-900">
                   {selectedItem.title}
                 </h3>
                 {selectedItem.heading_path && (
-                  <p className="text-[11px] text-zinc-400 font-mono">
+                  <p className="text-[11px] text-slate-400 font-mono">
                     {selectedItem.heading_path}
                   </p>
                 )}
               </div>
 
               {/* 官方外文原文 */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
                   {selectedItem.id.startsWith('UCC') || selectedItem.id.startsWith('DGCL') || selectedItem.id.startsWith('USC') || selectedItem.id.startsWith('CASE:SCOTUS') || selectedItem.id.startsWith('CASE:2ND')
                     ? '英文官方条文与判决原文 (Official Legal Text)'
                     : '德语/外文官方合并文本 (Amtlicher Text / Official Text)'}
                 </label>
-                <div className="p-3.5 bg-zinc-50 rounded-lg border border-zinc-200 text-xs font-mono text-zinc-900 leading-relaxed whitespace-pre-wrap">
+                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
                   {selectedItem.text_de}
                 </div>
               </div>
 
               {/* 中文对照 */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                    中文参考释义与要旨 (对齐中国涉外审判规范)
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    中文参考译文与法理要旨
                   </label>
-                  <span className="text-[10px] text-zinc-400">标准法学术语对齐</span>
+                  <span className="text-[10px] text-slate-400">标准法学术语对齐</span>
                 </div>
-                <div className="p-3.5 bg-zinc-50/70 rounded-lg border border-zinc-200 text-xs text-zinc-800 leading-relaxed whitespace-pre-wrap">
+                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200/70 text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
                   {selectedItem.text_zh_machine}
                 </div>
               </div>
 
-              {/* Stand 效力信息 */}
-              <div className="p-3 bg-zinc-100/70 rounded-lg text-[11px] text-zinc-600 font-mono space-y-1">
+              {/* 效力与数据出处 */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 text-[11px] text-slate-600 font-mono space-y-1">
                 <div>
-                  <strong>公布与修订批注 (Stand)：</strong>{' '}
+                  <strong>公布与修订版本：</strong>{' '}
                   {selectedItem.stand || '官方最新现行生效版本'}
                 </div>
                 <div>
-                  <strong>数据来源：</strong>{' '}
+                  <strong>数据源机构：</strong>{' '}
                   {selectedItem.id.startsWith('UCC') || selectedItem.id.startsWith('DGCL') || selectedItem.id.startsWith('USC')
                     ? '康奈尔大学法律信息所 (LII) / 统一法律委员会 (ULC) 权威收录'
                     : selectedItem.id.startsWith('Rome_I')
@@ -233,8 +253,8 @@ export const NormSearchEngineView: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="p-16 text-center text-xs text-zinc-400">
-              请在左侧列表选择条目以展开详细规定与款项结构
+            <div className="p-16 text-center text-xs text-slate-400">
+              请在左侧列表选择条目以展开详细条文与款项释义
             </div>
           )}
         </div>

@@ -3,6 +3,7 @@ import { UserRole, CaseState, CaseSummary, Evidence } from '../types/lawAgent';
 import { lawAgentApi } from '../api/lawAgentApi';
 
 export type ActiveView =
+  | 'home'
   | 'cases'
   | 'entry'
   | 'workspace'
@@ -37,6 +38,16 @@ interface AppContextType {
   removeToast: (id: string) => void;
   loadCase: (caseId: string, force?: boolean) => Promise<boolean>;
   refreshCurrentCase: () => Promise<void>;
+  // 3D 景深查明推演动画弹窗状态
+  isPipelineAnimationOpen: boolean;
+  setIsPipelineAnimationOpen: (open: boolean) => void;
+  openPipelineAnimation: () => void;
+  closePipelineAnimation: () => void;
+  // 检索默认过滤类型 (成文法 / 判例 / 全部) 与关键词
+  searchDefaultKind: 'all' | 'norm' | 'case';
+  setSearchDefaultKind: (kind: 'all' | 'norm' | 'case') => void;
+  searchDefaultQuery: string;
+  setSearchDefaultQuery: (query: string) => void;
   // 右侧抽屉 / 对照窗状态
   selectedEvidenceEid: string | null;
   setSelectedEvidenceEid: (eid: string | null) => void;
@@ -48,14 +59,21 @@ interface AppContextType {
   lawModalEid: string | null;
   isLawModalOpen: boolean;
   openLawModal: (eid: string) => void;
-  closeLawModal: () => void;
+  // 新建查明案情弹窗状态
+  isCaseEntryModalOpen: boolean;
+  setIsCaseEntryModalOpen: (open: boolean) => void;
+  openCaseEntryModal: () => void;
+  closeCaseEntryModal: () => void;
+  // 侧边栏折叠状态 (全局响应式与定位)
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRoleState] = useState<UserRole>('practitioner'); // 默认实务专业端
-  const [currentView, setCurrentView] = useState<ActiveView>('analysis'); // 默认展示深度分析与法源对照
+  const [currentView, setCurrentView] = useState<ActiveView>('home'); // 默认进入查明 Agent 主页
   const [currentCaseId, setCurrentCaseId] = useState<string | null>('C001');
   const [currentCase, setCurrentCase] = useState<CaseState | null>(null);
   const [casesList, setCasesList] = useState<CaseSummary[]>([]);
@@ -67,13 +85,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const currentCaseRef = useRef<CaseState | null>(null);
   currentCaseRef.current = currentCase;
 
+  // 3D 景深查明推演动画弹窗状态
+  const [isPipelineAnimationOpen, setIsPipelineAnimationOpen] = useState<boolean>(false);
+  const openPipelineAnimation = useCallback(() => setIsPipelineAnimationOpen(true), []);
+  const closePipelineAnimation = useCallback(() => setIsPipelineAnimationOpen(false), []);
+
+  // 检索默认过滤类型 (成文法 / 判例 / 全部) 与关键词
+  const [searchDefaultKind, setSearchDefaultKind] = useState<'all' | 'norm' | 'case'>('all');
+  const [searchDefaultQuery, setSearchDefaultQuery] = useState<string>('');
+
   // 权威法源抽屉 / 对照窗
   const [selectedEvidenceEid, setSelectedEvidenceEid] = useState<string | null>('E1');
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
+  // 侧边栏折叠状态 (全局响应式与定位)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+
   // 浮层法条小弹窗状态
   const [lawModalEid, setLawModalEid] = useState<string | null>(null);
   const [isLawModalOpen, setIsLawModalOpen] = useState<boolean>(false);
+
+  // 新建查明案情弹窗状态
+  const [isCaseEntryModalOpen, setIsCaseEntryModalOpen] = useState<boolean>(false);
+  const openCaseEntryModal = useCallback(() => setIsCaseEntryModalOpen(true), []);
+  const closeCaseEntryModal = useCallback(() => setIsCaseEntryModalOpen(false), []);
+
+  const handleSetCurrentView = useCallback((view: ActiveView) => {
+    if (view === 'entry') {
+      setIsCaseEntryModalOpen(true);
+      return;
+    }
+    setCurrentView(view);
+  }, []);
 
   const openLawDrawer = useCallback((eid?: string) => {
     if (eid) {
@@ -197,7 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role,
         setRole,
         currentView,
-        setCurrentView,
+        setCurrentView: handleSetCurrentView,
         currentCaseId,
         setCurrentCaseId,
         currentCase,
@@ -211,6 +254,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeToast,
         loadCase,
         refreshCurrentCase,
+        isPipelineAnimationOpen,
+        setIsPipelineAnimationOpen,
+        openPipelineAnimation,
+        closePipelineAnimation,
+        searchDefaultKind,
+        setSearchDefaultKind,
+        searchDefaultQuery,
+        setSearchDefaultQuery,
         selectedEvidenceEid,
         setSelectedEvidenceEid,
         isDrawerOpen,
@@ -221,6 +272,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLawModalOpen,
         openLawModal,
         closeLawModal,
+        isCaseEntryModalOpen,
+        setIsCaseEntryModalOpen,
+        openCaseEntryModal,
+        closeCaseEntryModal,
+        sidebarCollapsed,
+        setSidebarCollapsed,
       }}
     >
       {children}

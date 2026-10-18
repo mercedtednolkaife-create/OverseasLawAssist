@@ -14,6 +14,7 @@ CaseWorkflowStatus = Literal[
 
 
 class CaseMeta(BaseModel):
+    title: Optional[str] = None          # 案件规范化业务标题
     jurisdiction: str = "de_federal"     # 默认德国联邦法，支持多法域拓展
     contract_type: Optional[str] = None
     parties: List[str] = Field(default_factory=list)
@@ -214,6 +215,7 @@ class StrategicAssessment(BaseModel):
 
 class CaseState(BaseModel):
     case_id: str
+    title: Optional[str] = None          # 案件规范化业务标题
     snapshot_id: str
     mode: RunMode = "full"
     facts_zh: str
